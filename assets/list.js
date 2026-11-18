@@ -1,0 +1,52 @@
+(function () {
+  const chipsBox = document.getElementById('chips');
+  const grid = document.getElementById('grid');
+  const count = document.getElementById('count');
+  let projects = [];
+  let selected = '전체';
+
+  function card(p) {
+    return el('article', { class: 'card' }, [
+      thumbnail(p),
+      el('div', { class: 'card-body' }, [
+        el('span', { class: 'tag', text: p.category || '기타' }),
+        el('h2', {}, [el('a', { href: projectLink(p), text: p.title })]),
+        el('p', { class: 'summary', text: p.summary }),
+        el('div', { class: 'card-meta', text: p.author }),
+        el('a', { class: 'btn btn-outline btn-block', href: projectLink(p), text: '자세히 보고 체험하기' })
+      ])
+    ]);
+  }
+
+  function render() {
+    chipsBox.replaceChildren(...CATEGORIES.map((c) => {
+      const b = el('button', { type: 'button', class: 'chip', 'aria-pressed': String(c === selected), text: c });
+      b.addEventListener('click', () => { selected = c; render(); });
+      return b;
+    }));
+    const shown = projects.filter((p) => selected === '전체' || (p.category || '기타') === selected);
+    count.textContent = '결과물 ' + shown.length + '개';
+    if (shown.length === 0) {
+      const empty = el('div', { class: 'empty' }, [
+        el('p', { text: projects.length === 0 ? '아직 올라온 결과물이 없어요. 첫 번째로 올려 보세요.' : '이 분류에는 아직 결과물이 없어요.' }),
+        el('a', { class: 'btn btn-primary', href: 'submit.html', text: '내 결과물 올리기' })
+      ]);
+      grid.replaceChildren(empty);
+      grid.style.display = 'block';
+    } else {
+      grid.style.display = '';
+      grid.replaceChildren(...shown.map(card));
+    }
+  }
+
+  loadProjects()
+    .then((list) => {
+      projects = list.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      render();
+    })
+    .catch((err) => {
+      count.textContent = '';
+      grid.style.display = 'block';
+      grid.replaceChildren(el('div', { class: 'empty' }, [el('p', { text: err.message + ' 잠시 뒤에 새로고침해 주세요.' })]));
+    });
+})();

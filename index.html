@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<title>AI개발모임 · 결과물 둘러보기</title>
+<meta name="description" content="모임원이 만든 AI 프로젝트를 구경하고 직접 써보는 곳">
+</head>
+<body>
+<header class="site-header">
+<div class="inner">
+<a class="brand" href="index.html">
+<svg aria-hidden="true" width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#3451D1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="9" height="9" rx="2"></rect><rect x="16" y="3" width="9" height="9" rx="2"></rect><rect x="3" y="16" width="9" height="9" rx="2"></rect><path d="M20.5 16v9M16 20.5h9"></path></svg>
+AI개발모임
+</a>
+<nav class="site-nav" aria-label="주요 메뉴">
+<a class="nav-link" href="index.html" aria-current="page">결과물 둘러보기</a>
+<a class="btn btn-primary" href="submit.html">내 결과물 올리기</a>
+</nav>
+</div>
+</header>
+<main class="page-list">
+<section class="hero">
+<h1>모임원이 만든 AI 프로젝트를 구경하고 직접 써보세요</h1>
+<p>마음에 드는 결과물을 눌러 체험해 보고, 만든 사람에게 한마디 남겨 주세요.</p>
+</section>
+<section class="list-section" aria-label="결과물 목록">
+<div class="toolbar">
+<div class="chips" id="chips" role="group" aria-label="분류로 걸러 보기"></div>
+<p class="count" id="count" aria-live="polite"></p>
+</div>
+<div class="grid" id="grid"></div>
+</section>
+</main>
+<footer class="site-footer"><div class="inner">AI개발모임 · 모임원들의 결과물 공유 공간</div></footer>
+<script src="assets/app.js"></script>
+<script src="assets/list.js"></script>
+</body>
+</html>

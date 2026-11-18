@@ -3,7 +3,7 @@ globalThis.SITE_CONFIG = {
   // 구글 시트를 "웹에 게시"해서 받은 CSV 주소. 비어 있으면 등록된 결과물을 불러오지 않는다.
   sheetCsvUrl: '',
   // 구글 폼의 응답 주소 (https://docs.google.com/forms/d/e/<폼 ID>/formResponse). 비어 있으면 등록 양식을 닫아 둔다.
-  formAction: '',
+  formAction: 'https://docs.google.com/forms/d/e/1FAIpQLSfPgvQD1RAFrj3nOx_RSeDHmKpnheEo6lJCMMd7jLmeM_JfSw/formResponse',
   // 구글 폼 질문별 입력 이름 (entry.숫자)
   formFields: {
     title: '',

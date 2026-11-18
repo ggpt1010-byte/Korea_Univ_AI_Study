@@ -30,13 +30,17 @@ AI개발모임
 <p><a class="btn btn-plain" href="index.html">목록으로 돌아가기</a></p>
 </div>
 
-<div id="open" hidden>
+<div class="stack" id="open" hidden>
 <section class="page-head">
 <h1>내 결과물 올리기</h1>
 <p>로그인 없이 바로 올릴 수 있어요. 별표가 붙은 항목은 꼭 적어 주세요.</p>
 </section>
 
 <form class="form" id="form" novalidate>
+<div class="login-box" id="login-box" hidden>
+<p class="login-text" id="login-text">구글로 로그인하면 만든 사람 이름이 자동으로 들어가요. 이름만 가져오고, 이메일 주소는 저장하지 않아요.</p>
+<div id="google-button"></div>
+</div>
 <div class="field">
 <label for="f-title">프로젝트 이름 *</label>
 <input id="f-title" name="title" type="text" required maxlength="80" placeholder="예: 회의록 요약 봇">
@@ -48,7 +52,7 @@ AI개발모임
 <div class="field-row">
 <div class="field">
 <label for="f-author">만든 사람 *</label>
-<input id="f-author" name="author" type="text" required maxlength="40" placeholder="닉네임">
+<input id="f-author" name="author" type="text" required maxlength="40" placeholder="닉네임" autocomplete="nickname">
 </div>
 <div class="field">
 <label for="f-category">분류 *</label>

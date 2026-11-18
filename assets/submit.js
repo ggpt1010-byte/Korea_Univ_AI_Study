@@ -14,6 +14,47 @@
   if (!ready) { closed.hidden = false; return; }
   open.hidden = false;
 
+  // 구글 로그인: 로그인한 사람의 이름을 "만든 사람" 칸에 넣어 준다.
+  // 이름을 편하게 채워 주는 기능일 뿐, 본인 확인은 아니다. 이메일 주소는 쓰지도 보내지도 않는다.
+  function decodeName(credential) {
+    try {
+      const part = credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const bytes = Uint8Array.from(atob(part), (c) => c.charCodeAt(0));
+      const payload = JSON.parse(new TextDecoder().decode(bytes));
+      return String(payload.name || payload.given_name || '').trim().slice(0, 40);
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function setupGoogleLogin() {
+    if (!config.googleClientId) return;
+    const box = document.getElementById('login-box');
+    const text = document.getElementById('login-text');
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.onload = () => {
+      if (!globalThis.google || !google.accounts || !google.accounts.id) return;
+      google.accounts.id.initialize({
+        client_id: config.googleClientId,
+        callback: (response) => {
+          const name = decodeName(response.credential || '');
+          if (!name) return;
+          form.elements.author.value = name;
+          text.textContent = name + ' 님으로 로그인했어요. 만든 사람 칸에 이름을 넣었어요. 다른 이름으로 올리고 싶으면 고쳐 적어도 돼요.';
+          document.getElementById('google-button').hidden = true;
+        }
+      });
+      google.accounts.id.renderButton(document.getElementById('google-button'), {
+        type: 'standard', theme: 'outline', size: 'large', text: 'signin_with', shape: 'rectangular', locale: 'ko'
+      });
+      box.hidden = false;
+    };
+    document.head.append(script); // 불러오지 못하면 버튼 없이 직접 적으면 된다.
+  }
+  setupGoogleLogin();
+
   function fail(message, input) {
     error.textContent = message;
     error.hidden = false;

@@ -13,6 +13,9 @@ globalThis.SITE_CONFIG = {
     url: '',
     description: ''
   },
+  // 구글 로그인 키 (....apps.googleusercontent.com). 넣으면 등록 양식에 구글 로그인 버튼이 생기고,
+  // 로그인한 사람의 이름이 "만든 사람" 칸에 자동으로 들어간다. 비어 있으면 버튼 없이 직접 적는다.
+  googleClientId: '',
   // 피드백(utterances)이 쌓이는 저장소. 비어 있으면 피드백 창을 띄우지 않는다.
   feedbackRepo: 'ggpt1010-byte/Korea_Univ_AI_Study'
 };

@@ -158,3 +158,6 @@ main { flex-grow: 1; width: 100%; margin: 0 auto; }
 .done p { margin: 0; font-size: 16px; line-height: 1.7; color: var(--muted); }
 .done .actions { justify-content: center; }
 [hidden] { display: none !important; }
+.login-box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-radius: 12px; background: var(--ground); border: 1px solid var(--line); }
+.login-text { margin: 0; flex: 1 1 260px; font-size: 14px; line-height: 1.6; color: var(--body); }
+.stack { display: flex; flex-direction: column; gap: 28px; }

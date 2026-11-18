@@ -23,12 +23,74 @@ AI개발모임
 </div>
 </header>
 <main class="page-narrow">
-<div class="notice">
+
+<div class="notice" id="closed" hidden>
 <h1>내 결과물 올리기</h1>
 <p>등록 양식은 곧 열려요. 로그인 없이 바로 올릴 수 있게 준비하고 있어요.</p>
 <p><a class="btn btn-plain" href="index.html">목록으로 돌아가기</a></p>
 </div>
+
+<div id="open" hidden>
+<section class="page-head">
+<h1>내 결과물 올리기</h1>
+<p>로그인 없이 바로 올릴 수 있어요. 별표가 붙은 항목은 꼭 적어 주세요.</p>
+</section>
+
+<form class="form" id="form" novalidate>
+<div class="field">
+<label for="f-title">프로젝트 이름 *</label>
+<input id="f-title" name="title" type="text" required maxlength="80" placeholder="예: 회의록 요약 봇">
+</div>
+<div class="field">
+<label for="f-summary">한 줄 소개 *</label>
+<input id="f-summary" name="summary" type="text" required maxlength="160" placeholder="무엇을 해 주는 프로젝트인지 한 문장으로 적어 주세요">
+</div>
+<div class="field-row">
+<div class="field">
+<label for="f-author">만든 사람 *</label>
+<input id="f-author" name="author" type="text" required maxlength="40" placeholder="닉네임">
+</div>
+<div class="field">
+<label for="f-category">분류 *</label>
+<select id="f-category" name="category" required>
+<option value="챗봇">챗봇</option>
+<option value="도구">도구</option>
+<option value="이미지">이미지</option>
+<option value="게임">게임</option>
+<option value="기타">기타</option>
+</select>
+</div>
+</div>
+<div class="field">
+<label for="f-url">체험 링크 *</label>
+<input id="f-url" name="url" type="url" required maxlength="500" placeholder="https://" aria-describedby="f-url-hint">
+<p class="hint" id="f-url-hint">다른 모임원이 눌러서 바로 써 볼 수 있는 주소를 넣어 주세요. 이 주소의 첫 화면이 목록과 상세 화면에 미리보기로 보여요.</p>
+</div>
+<div class="field">
+<label for="f-description">자세한 설명</label>
+<textarea id="f-description" name="description" maxlength="3000" placeholder="왜 만들었는지, 어떻게 쓰는지, 무엇으로 만들었는지 자유롭게 적어 주세요"></textarea>
+</div>
+<p class="form-error" id="error" role="alert" hidden></p>
+<div class="form-actions">
+<a class="btn btn-plain" href="index.html">취소</a>
+<button class="btn btn-primary" id="send" type="submit">등록하기</button>
+</div>
+</form>
+</div>
+
+<section class="done" id="done" hidden>
+<svg aria-hidden="true" width="56" height="56" viewBox="0 0 56 56" fill="none" stroke="#3451D1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="28" cy="28" r="24"></circle><path d="M18 29l7 7 13-15"></path></svg>
+<h1 tabindex="-1" id="done-title">결과물을 보냈어요</h1>
+<p>목록에는 몇 분 안에 나타나요. 첫 화면 미리보기 이미지는 한 시간 안에 자동으로 들어가요.</p>
+<div class="actions">
+<a class="btn btn-primary" href="index.html">목록으로 가기</a>
+<button class="btn btn-plain" id="again" type="button">하나 더 올리기</button>
+</div>
+</section>
+
 </main>
 <footer class="site-footer"><div class="inner">AI개발모임 · 모임원들의 결과물 공유 공간</div></footer>
+<script src="assets/config.js"></script>
+<script src="assets/submit.js"></script>
 </body>
 </html>

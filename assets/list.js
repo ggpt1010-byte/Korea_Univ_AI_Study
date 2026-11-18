@@ -41,7 +41,7 @@
 
   loadProjects()
     .then((list) => {
-      projects = list.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      projects = list;
       render();
     })
     .catch((err) => {

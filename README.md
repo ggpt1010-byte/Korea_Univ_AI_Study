@@ -4,7 +4,7 @@
 
 ## 구성
 
-- `index.html` 결과물 목록, `project.html` 결과물 상세, `submit.html` 결과물 등록
+- `index.html` 결과물 목록, `project.html` 결과물 상세, `submit.html` 결과물 등록, `privacy.html` 개인정보 안내
 - `assets/config.js` 구글 폼, 구글 시트, 구글 로그인, 피드백 설정을 모아 둔 곳
 - `data/projects.json` 직접 넣어 둔 결과물 (지금은 예시)
 - `data/submissions.json` 구글 시트에서 받아 둔 등록 내용 사본 (자동으로 갱신)

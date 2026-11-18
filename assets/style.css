@@ -119,6 +119,7 @@ main { flex-grow: 1; width: 100%; margin: 0 auto; }
 .panel h2 { margin: 0; font-size: 20px; }
 .panel p { margin: 0; font-size: 16px; line-height: 1.8; color: var(--body); white-space: pre-line; }
 .panel ol { margin: 0; padding-left: 22px; font-size: 16px; line-height: 1.9; color: var(--body); }
+.panel ul { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; line-height: 1.8; color: var(--body); }
 .tools { display: flex; flex-wrap: wrap; gap: 8px; }
 .tools span { padding: 6px 12px; border-radius: 8px; background: var(--ground); border: 1px solid var(--line); font-size: 14px; color: var(--body); }
 
@@ -131,6 +132,8 @@ main { flex-grow: 1; width: 100%; margin: 0 auto; }
 
 .site-footer { border-top: 1px solid var(--line); background: var(--surface); }
 .site-footer .inner { max-width: 1120px; margin: 0 auto; padding: 24px; font-size: 14px; color: var(--muted); }
+.site-footer a { display: inline-block; padding: 12px 0; color: var(--muted); }
+.site-footer a:hover { color: var(--accent-dark); }
 
 .hint { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
 .feedback-frame { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 20px; min-height: 120px; }

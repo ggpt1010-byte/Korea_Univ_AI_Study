@@ -41,7 +41,7 @@ python3 -m http.server 8000
   "title": "프로젝트 이름",
   "summary": "한 줄 소개",
   "author": "만든 사람",
-  "category": "챗봇 | 도구 | 이미지 | 게임 | 기타",
+  "category": "사이트 | 게임 | 기타",
   "url": "https://체험-링크",
   "description": "자세한 설명 (선택)",
   "howto": ["쓰는 방법 (선택)"],

@@ -1,7 +1,7 @@
 // 공통 기능: 데이터 불러오기와 화면 요소 만들기.
 // 모임원이 입력한 글이 그대로 들어오므로, 화면에 넣을 때는 항상 textContent만 사용한다.
 
-const CATEGORIES = ['전체', '챗봇', '도구', '이미지', '게임', '기타'];
+const CATEGORIES = ['전체', '사이트', '게임', '기타'];
 
 async function fetchJson(path) {
   const res = await fetch(path, { cache: 'no-cache' });

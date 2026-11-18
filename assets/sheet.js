@@ -1,7 +1,8 @@
 // 구글 시트(CSV)를 결과물 목록으로 바꾼다.
 // 브라우저와 GitHub Actions(Node)에서 같은 코드를 쓰기 위해 globalThis 에 올린다.
 (function (root) {
-  var CATEGORIES = ['챗봇', '도구', '이미지', '게임', '기타'];
+  // 구글 폼의 "분류" 선택지와 똑같이 맞춘다.
+  var CATEGORIES = ['사이트', '게임', '기타'];
 
   // 따옴표와 줄바꿈이 들어간 칸도 처리하는 CSV 읽기.
   function parseCsv(text) {

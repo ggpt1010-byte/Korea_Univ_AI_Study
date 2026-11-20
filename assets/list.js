@@ -5,19 +5,6 @@
   let projects = [];
   let selected = '전체';
 
-  function card(p) {
-    return el('article', { class: 'card' }, [
-      thumbnail(p),
-      el('div', { class: 'card-body' }, [
-        el('span', { class: 'tag', text: p.category || '기타' }),
-        el('h2', {}, [el('a', { href: projectLink(p), text: p.title })]),
-        el('p', { class: 'summary', text: p.summary }),
-        el('div', { class: 'card-meta', text: p.author }),
-        el('a', { class: 'btn btn-outline btn-block', href: projectLink(p), text: '자세히 보고 체험하기' })
-      ])
-    ]);
-  }
-
   function render() {
     chipsBox.replaceChildren(...CATEGORIES.map((c) => {
       const b = el('button', { type: 'button', class: 'chip', 'aria-pressed': String(c === selected), text: c });
@@ -35,7 +22,7 @@
       grid.style.display = 'block';
     } else {
       grid.style.display = '';
-      grid.replaceChildren(...shown.map(card));
+      grid.replaceChildren(...shown.map(projectCard));
     }
   }
 

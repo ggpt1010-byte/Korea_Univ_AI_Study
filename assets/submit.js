@@ -14,46 +14,35 @@
   if (!ready) { closed.hidden = false; return; }
   open.hidden = false;
 
-  // 구글 로그인: 로그인한 사람의 이름을 "만든 사람" 칸에 넣어 준다.
-  // 이름을 편하게 채워 주는 기능일 뿐, 본인 확인은 아니다. 이메일 주소는 쓰지도 보내지도 않는다.
-  function decodeName(credential) {
-    try {
-      const part = credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-      const bytes = Uint8Array.from(atob(part), (c) => c.charCodeAt(0));
-      const payload = JSON.parse(new TextDecoder().decode(bytes));
-      return String(payload.name || payload.given_name || '').trim().slice(0, 40);
-    } catch (err) {
-      return '';
+  // 구글 로그인(오른쪽 위 메뉴와 같은 로그인): 이름을 "만든 사람" 칸에 넣고,
+  // 등록할 때 계정 번호(알아볼 수 없게 바꾼 값)를 함께 보내 내 정보 화면에 모아 보이게 한다.
+  // 본인 확인 기능은 아니다. 이메일 주소는 쓰지도 보내지도 않는다.
+  const account = globalThis.Account;
+  const loginBox = document.getElementById('login-box');
+  const loginText = document.getElementById('login-text');
+  const googleButton = document.getElementById('google-button');
+  const doneMine = document.getElementById('done-mine');
+  let buttonDrawn = false;
+
+  function showAccount(a) {
+    if (!account || !account.enabled) { loginBox.hidden = true; return; }
+    loginBox.hidden = false;
+    if (a) {
+      if (!form.elements.author.value.trim()) form.elements.author.value = a.name;
+      loginText.textContent = a.name + ' 님으로 로그인했어요. 지금 올리는 결과물은 내 정보 화면에 모여요. 만든 사람 이름은 고쳐 적어도 돼요.';
+      googleButton.hidden = true;
+    } else {
+      loginText.textContent = '구글로 로그인하고 올리면 만든 사람 이름이 자동으로 들어가고, 내 정보 화면에서 내 결과물을 모아 볼 수 있어요. 로그인하지 않아도 올릴 수 있어요.';
+      googleButton.hidden = false;
+      if (!buttonDrawn) { buttonDrawn = true; account.renderButton(googleButton, 240); }
     }
   }
-
-  function setupGoogleLogin() {
-    if (!config.googleClientId) return;
-    const box = document.getElementById('login-box');
-    const text = document.getElementById('login-text');
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.onload = () => {
-      if (!globalThis.google || !google.accounts || !google.accounts.id) return;
-      google.accounts.id.initialize({
-        client_id: config.googleClientId,
-        callback: (response) => {
-          const name = decodeName(response.credential || '');
-          if (!name) return;
-          form.elements.author.value = name;
-          text.textContent = name + ' 님으로 로그인했어요. 만든 사람 칸에 이름을 넣었어요. 다른 이름으로 올리고 싶으면 고쳐 적어도 돼요.';
-          document.getElementById('google-button').hidden = true;
-        }
-      });
-      google.accounts.id.renderButton(document.getElementById('google-button'), {
-        type: 'standard', theme: 'outline', size: 'large', text: 'signin_with', shape: 'rectangular', locale: 'ko'
-      });
-      box.hidden = false;
-    };
-    document.head.append(script); // 불러오지 못하면 버튼 없이 직접 적으면 된다.
+  if (account) {
+    showAccount(account.current());
+    account.onChange((a) => { buttonDrawn = false; showAccount(a); });
+  } else {
+    loginBox.hidden = true;
   }
-  setupGoogleLogin();
 
   function fail(message, input) {
     error.textContent = message;
@@ -78,6 +67,8 @@
 
     const body = new URLSearchParams();
     names.forEach((n) => body.append(fields[n], data[n]));
+    const me = account && account.current();
+    if (me && fields.owner) body.append(fields.owner, me.owner);
 
     send.disabled = true;
     send.textContent = '보내는 중';
@@ -86,6 +77,7 @@
       await fetch(config.formAction, { method: 'POST', mode: 'no-cors', body: body });
       open.hidden = true;
       done.hidden = false;
+      doneMine.hidden = !(me && fields.owner);
       document.getElementById('done-title').focus();
     } catch (err) {
       fail('보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.');

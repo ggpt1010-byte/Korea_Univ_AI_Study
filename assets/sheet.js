@@ -75,7 +75,8 @@
       category: findColumn(head, ['분류']),
       url: findColumn(head, ['체험링크', '링크']),
       description: findColumn(head, ['자세한설명', '설명']),
-      hidden: findColumn(head, ['숨김'])
+      hidden: findColumn(head, ['숨김']),
+      owner: findColumn(head, ['계정번호', 'owner'])
     };
     if (col.title === -1 || col.url === -1) {
       throw new Error('시트에서 "프로젝트 이름"과 "체험 링크" 열을 찾지 못했어요.');
@@ -96,6 +97,7 @@
       while (seen[id]) id = hashId(id + '+');
       seen[id] = true;
       var category = clip(get(col.category), 20);
+      var owner = clip(get(col.owner), 40);
       list.push({
         id: id,
         title: title,
@@ -105,6 +107,7 @@
         url: url,
         description: clip(get(col.description), 3000),
         createdAt: isoDate(stamp),
+        owner: /^g[0-9a-f]{16}$/.test(owner) ? owner : '',
         row: i
       });
     }

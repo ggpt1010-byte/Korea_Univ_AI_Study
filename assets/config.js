@@ -11,10 +11,11 @@ globalThis.SITE_CONFIG = {
     author: 'entry.1105255090',
     category: 'entry.397329402',
     url: 'entry.1675608440',
-    description: 'entry.1512553475'
+    description: 'entry.1512553475',
+    owner: 'entry.2112092626' // 계정 번호(구글 로그인한 사람만, 알아볼 수 없게 바꾼 값)
   },
-  // 구글 로그인 키 (....apps.googleusercontent.com). 넣으면 등록 양식에 구글 로그인 버튼이 생기고,
-  // 로그인한 사람의 이름이 "만든 사람" 칸에 자동으로 들어간다. 비어 있으면 버튼 없이 직접 적는다.
+  // 구글 로그인 키 (....apps.googleusercontent.com). 넣으면 오른쪽 위에 로그인과 내 정보 메뉴가 생기고,
+  // 로그인한 사람의 이름이 "만든 사람" 칸에 자동으로 들어간다. 비어 있으면 로그인 없이 직접 적는다.
   googleClientId: '961375734681-0kf78dhibbk59tqaf31adjlt50lhgi1m.apps.googleusercontent.com',
   // 피드백(utterances)이 쌓이는 저장소. 비어 있으면 피드백 창을 띄우지 않는다.
   feedbackRepo: 'ggpt1010-byte/Korea_Univ_AI_Study'

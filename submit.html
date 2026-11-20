@@ -20,6 +20,7 @@ AI개발모임
 <a class="nav-link" href="index.html">결과물 둘러보기</a>
 <a class="btn btn-primary" href="submit.html">내 결과물 올리기</a>
 </nav>
+<div class="account" id="account"></div>
 </div>
 </header>
 <main class="page-narrow">
@@ -38,7 +39,7 @@ AI개발모임
 
 <form class="form" id="form" novalidate>
 <div class="login-box" id="login-box" hidden>
-<p class="login-text" id="login-text">구글로 로그인하면 만든 사람 이름이 자동으로 들어가요. 이름만 가져오고, 이메일 주소는 저장하지 않아요.</p>
+<p class="login-text" id="login-text" aria-live="polite"></p>
 <div id="google-button"></div>
 </div>
 <div class="field">
@@ -86,6 +87,7 @@ AI개발모임
 <p>목록에는 몇 분 안에 나타나요. 첫 화면 미리보기 이미지는 한 시간 안에 자동으로 들어가요.</p>
 <div class="actions">
 <a class="btn btn-primary" href="index.html">목록으로 가기</a>
+<a class="btn btn-plain" id="done-mine" href="me.html" hidden>내 정보에서 보기</a>
 <button class="btn btn-plain" id="again" type="button">하나 더 올리기</button>
 </div>
 </section>
@@ -93,6 +95,7 @@ AI개발모임
 </main>
 <footer class="site-footer"><div class="inner">AI개발모임 · 모임원들의 결과물 공유 공간 · <a href="privacy.html">개인정보 안내</a></div></footer>
 <script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
 <script src="assets/submit.js"></script>
 </body>
 </html>

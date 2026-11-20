@@ -164,3 +164,55 @@ main { flex-grow: 1; width: 100%; margin: 0 auto; }
 .login-box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-radius: 12px; background: var(--ground); border: 1px solid var(--line); }
 .login-text { margin: 0; flex: 1 1 260px; font-size: 14px; line-height: 1.6; color: var(--body); }
 .stack { display: flex; flex-direction: column; gap: 28px; }
+
+/* 오른쪽 위 로그인과 내 정보 메뉴 */
+.site-nav { margin-left: auto; }
+.account { position: relative; display: flex; align-items: center; }
+@media (max-width: 559px) {
+  /* 휴대폰: 첫 줄에 이름표와 로그인, 둘째 줄에 메뉴 */
+  .brand { flex: 1 1 auto; }
+  .account { order: 2; }
+  .account-btn { max-width: 160px; }
+  .site-nav { order: 3; flex-basis: 100%; margin-left: 0; }
+}
+.account-btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; max-width: 200px;
+  padding: 0 14px 0 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+  color: var(--ink); font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer;
+}
+.account-btn:hover { border-color: var(--field-line); }
+.avatar {
+  flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--tint); color: var(--accent-dark);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+}
+.avatar-lg { width: 56px; height: 56px; font-size: 22px; }
+.account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-pop {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; width: 300px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(21, 24, 33, 0.12); padding: 18px; display: flex; flex-direction: column; gap: 10px;
+}
+.account-pop.is-sheet { position: fixed; left: 16px; right: 16px; width: auto; }
+.account-pop p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--body); }
+.account-pop .pop-name { font-size: 16px; font-weight: 700; color: var(--ink); }
+.pop-google { min-height: 44px; }
+.pop-link {
+  display: flex; align-items: center; width: 100%; min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--ink); font-family: inherit; font-size: 15px; font-weight: 500;
+  text-align: left; text-decoration: none; cursor: pointer;
+}
+.pop-link:hover, .pop-link[aria-current="page"] { background: var(--ground); color: var(--ink); }
+.pop-out { color: var(--muted); }
+.pop-more { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; }
+
+/* 내 정보 화면 */
+.profile {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 24px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+}
+.profile-text { flex: 1 1 200px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.profile-name { margin: 0; font-size: 20px; font-weight: 700; overflow-wrap: anywhere; }
+.section-title { margin: 0; font-size: 22px; }
+.me-login { display: flex; flex-direction: column; gap: 16px; }
+.me-login p { margin: 0; }
+.page-narrow .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }

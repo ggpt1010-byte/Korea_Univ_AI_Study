@@ -15,6 +15,28 @@
     );
   }
 
+  // GitHub 계정으로 로그인해서 남기는 피드백 창 (utterances). 글은 저장소의 Issues 에 쌓인다.
+  function feedbackSection(p) {
+    const config = globalThis.SITE_CONFIG || {};
+    const box = el('section', { class: 'feedback', id: 'feedback' }, [el('h2', { text: '피드백' })]);
+    if (!config.feedbackRepo) {
+      box.append(el('div', { class: 'notice', text: '피드백 기능은 곧 열려요.' }));
+      return box;
+    }
+    box.append(el('p', { class: 'hint', text: 'GitHub 계정으로 로그인하면 피드백을 남길 수 있어요. 아래 "Sign in with GitHub" 버튼을 눌러 주세요.' }));
+    const frame = el('div', { class: 'feedback-frame' });
+    const script = document.createElement('script');
+    script.src = 'https://utteranc.es/client.js';
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.setAttribute('repo', config.feedbackRepo);
+    script.setAttribute('issue-term', '피드백 ' + p.id);
+    script.setAttribute('theme', 'github-light');
+    frame.append(script);
+    box.append(frame);
+    return box;
+  }
+
   function render(p) {
     document.title = p.title + ' · AI개발모임';
     const url = safeUrl(p.url);
@@ -50,10 +72,7 @@
       ]),
       shotLink,
       panel.childNodes.length ? panel : null,
-      el('section', { class: 'feedback', id: 'feedback' }, [
-        el('h2', { text: '피드백' }),
-        el('div', { class: 'notice', text: '피드백 기능은 곧 열려요. GitHub 계정으로 로그인한 뒤 남길 수 있게 준비하고 있어요.' })
-      ])
+      feedbackSection(p)
     );
   }
 

@@ -4,10 +4,26 @@
 
 ## 구성
 
-- `index.html` 결과물 목록, `project.html` 결과물 상세, `submit.html` 결과물 등록(준비 중)
-- `data/projects.json` 결과물 데이터
-- `shots/` 체험 링크의 첫 화면 이미지. `data/projects.json`이 바뀌면 GitHub Actions가 자동으로 찍어 넣습니다.
+- `index.html` 결과물 목록, `project.html` 결과물 상세, `submit.html` 결과물 등록, `privacy.html` 개인정보 안내
+- `assets/config.js` 구글 폼, 구글 시트, 구글 로그인, 피드백 설정을 모아 둔 곳
+- `data/projects.json` 직접 넣어 둔 결과물 (지금은 예시)
+- `data/submissions.json` 구글 시트에서 받아 둔 등록 내용 사본 (자동으로 갱신)
+- `shots/` 체험 링크의 첫 화면 이미지 (자동으로 갱신)
+- `scripts/sync.mjs` 구글 시트의 등록 내용을 받아 오는 스크립트
 - `scripts/capture.mjs` 첫 화면을 찍는 스크립트
+
+## 등록과 피드백이 움직이는 방식
+
+1. 모임원이 `submit.html`에서 등록하면 내용이 구글 폼으로 가고, 연결된 구글 시트에 한 줄씩 쌓입니다.
+2. 사이트는 열릴 때마다 그 시트(웹에 게시한 CSV)를 읽어 목록에 보여 줍니다. 그래서 등록하면 몇 분 안에 나타납니다.
+3. GitHub Actions가 20분마다 시트를 확인해서 새 결과물의 체험 링크 첫 화면을 찍어 `shots/`에 넣습니다.
+4. 피드백은 utterances로 받습니다. GitHub 계정으로 로그인해서 남기고, 글은 이 저장소의 Issues에 쌓입니다.
+
+구글 로그인 버튼은 "만든 사람" 칸에 이름을 채워 주는 편의 기능입니다. 본인 확인은 아니며, 이메일 주소는 쓰지 않습니다.
+
+## 올라온 결과물 숨기기
+
+구글 시트의 맨 오른쪽에 `숨김`이라는 열을 만들고, 숨기고 싶은 줄의 그 칸에 아무 글자나 적으면 사이트에서 사라집니다. 줄을 지워도 됩니다.
 
 ## 내 컴퓨터에서 보기
 
@@ -25,7 +41,7 @@ python3 -m http.server 8000
   "title": "프로젝트 이름",
   "summary": "한 줄 소개",
   "author": "만든 사람",
-  "category": "챗봇 | 도구 | 이미지 | 게임 | 기타",
+  "category": "사이트 | 게임 | 기타",
   "url": "https://체험-링크",
   "description": "자세한 설명 (선택)",
   "howto": ["쓰는 방법 (선택)"],

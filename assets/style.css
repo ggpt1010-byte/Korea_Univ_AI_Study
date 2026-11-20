@@ -119,6 +119,7 @@ main { flex-grow: 1; width: 100%; margin: 0 auto; }
 .panel h2 { margin: 0; font-size: 20px; }
 .panel p { margin: 0; font-size: 16px; line-height: 1.8; color: var(--body); white-space: pre-line; }
 .panel ol { margin: 0; padding-left: 22px; font-size: 16px; line-height: 1.9; color: var(--body); }
+.panel ul { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; line-height: 1.8; color: var(--body); }
 .tools { display: flex; flex-wrap: wrap; gap: 8px; }
 .tools span { padding: 6px 12px; border-radius: 8px; background: var(--ground); border: 1px solid var(--line); font-size: 14px; color: var(--body); }
 
@@ -131,3 +132,35 @@ main { flex-grow: 1; width: 100%; margin: 0 auto; }
 
 .site-footer { border-top: 1px solid var(--line); background: var(--surface); }
 .site-footer .inner { max-width: 1120px; margin: 0 auto; padding: 24px; font-size: 14px; color: var(--muted); }
+.site-footer a { display: inline-block; padding: 12px 0; color: var(--muted); }
+.site-footer a:hover { color: var(--accent-dark); }
+
+.hint { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.feedback-frame { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 20px; min-height: 120px; }
+.feedback-frame .utterances { max-width: none; }
+
+.page-head { display: flex; flex-direction: column; gap: 10px; }
+.page-head h1 { margin: 0; font-size: clamp(28px, 5vw, 34px); line-height: 1.3; letter-spacing: -0.02em; }
+.page-head p { margin: 0; font-size: 16px; line-height: 1.7; color: var(--muted); }
+
+.form { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 22px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 15px; font-weight: 700; }
+.field input, .field select, .field textarea {
+  width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid var(--field-line); border-radius: 10px;
+  background: var(--surface); color: var(--ink); font-family: inherit; font-size: 16px;
+}
+.field textarea { min-height: 160px; padding: 12px 14px; line-height: 1.6; resize: vertical; }
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; padding-top: 6px; }
+.form-error { margin: 0; padding: 12px 14px; border-radius: 10px; background: #FDECEC; color: #8A1C1C; font-size: 15px; line-height: 1.6; }
+.btn[disabled] { opacity: 0.6; cursor: default; }
+
+.done { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 48px 28px; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+.done h1 { margin: 0; font-size: 30px; line-height: 1.3; }
+.done p { margin: 0; font-size: 16px; line-height: 1.7; color: var(--muted); }
+.done .actions { justify-content: center; }
+[hidden] { display: none !important; }
+.login-box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-radius: 12px; background: var(--ground); border: 1px solid var(--line); }
+.login-text { margin: 0; flex: 1 1 260px; font-size: 14px; line-height: 1.6; color: var(--body); }
+.stack { display: flex; flex-direction: column; gap: 28px; }

@@ -1,13 +1,33 @@
 // 공통 기능: 데이터 불러오기와 화면 요소 만들기.
 // 모임원이 입력한 글이 그대로 들어오므로, 화면에 넣을 때는 항상 textContent만 사용한다.
 
-const CATEGORIES = ['전체', '챗봇', '도구', '이미지', '게임', '기타'];
+const CATEGORIES = ['전체', '사이트', '게임', '기타'];
 
-async function loadProjects() {
-  const res = await fetch('data/projects.json', { cache: 'no-cache' });
+async function fetchJson(path) {
+  const res = await fetch(path, { cache: 'no-cache' });
   if (!res.ok) throw new Error('결과물 목록을 불러오지 못했어요 (' + res.status + ')');
-  const list = await res.json();
-  return Array.isArray(list) ? list : [];
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+// 모임원이 구글 폼으로 등록한 결과물. 시트를 바로 읽고, 안 되면 저장소에 받아 둔 사본을 쓴다.
+async function loadSubmitted() {
+  const config = globalThis.SITE_CONFIG || {};
+  if (!config.sheetCsvUrl) return [];
+  try {
+    const res = await fetch(config.sheetCsvUrl, { cache: 'no-store' });
+    if (!res.ok) throw new Error(String(res.status));
+    return SheetData.rowsToProjects(SheetData.parseCsv(await res.text()));
+  } catch (err) {
+    try { return await fetchJson('data/submissions.json'); } catch (err2) { return []; }
+  }
+}
+
+// 최근에 올라온 결과물이 먼저 오도록 정렬해서 돌려준다.
+async function loadProjects() {
+  const [base, submitted] = await Promise.all([fetchJson('data/projects.json'), loadSubmitted()]);
+  const key = (p) => String(p.createdAt || '') + '#' + String(p.row || 0).padStart(6, '0');
+  return submitted.concat(base).sort((a, b) => key(b).localeCompare(key(a)));
 }
 
 function el(tag, attrs, children) {

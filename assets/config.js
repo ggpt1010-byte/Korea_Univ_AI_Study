@@ -13,23 +13,23 @@ globalThis.SITE_CONFIG = {
     url: 'entry.1675608440',
     description: 'entry.1512553475',
     owner: 'entry.2112092626', // 계정 번호(구글 로그인한 사람만, 알아볼 수 없게 바꾼 값)
-    group: '',      // "그룹 번호" 질문 (단답형). 비어 있으면 그룹에 올리기와 공개 범위 고르기를 숨긴다.
-    visibility: ''  // "공개 범위" 질문 (단답형, 공개 또는 비공개)
+    group: 'entry.604167476',      // "그룹 번호" 질문 (단답형). 비어 있으면 그룹에 올리기와 공개 범위 고르기를 숨긴다.
+    visibility: 'entry.1275904896'  // "공개 범위" 질문 (단답형, 공개 또는 비공개)
   },
   // 비밀번호 그룹. 결과물 폼과 다른 "그룹 폼"을 하나 더 쓴다. 셋 다 채워야 그룹 기능이 열린다.
   // 그룹 폼 응답 시트를 "웹에 게시"한 CSV 주소
-  groupSheetCsvUrl: '',
+  groupSheetCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrM8SpnQCGcm0iAbmbEJjvv5tpapldrxN3DUaRQPSuAg-Rlke7lGXdkhKm-J3NLRSobcTGEqIKgJvu/pub?gid=1592204593&single=true&output=csv',
   // 그룹 폼의 응답 주소 (https://docs.google.com/forms/d/e/<폼 ID>/formResponse)
-  groupFormAction: '',
+  groupFormAction: 'https://docs.google.com/forms/d/e/1FAIpQLSdZ5FtcFwDLDfsL9IQ9JulLaRK5ZgzJJLdANHivQiCkbxe9Ag/formResponse',
   // 그룹 폼 질문별 입력 이름 (entry.숫자). 질문은 모두 단답형.
   groupFormFields: {
-    kind: '',    // 기록 종류 (그룹 만들기, 검증, 검증 취소)
-    group: '',   // 그룹 번호
-    name: '',    // 그룹 이름
-    intro: '',   // 그룹 소개
-    pass: '',    // 비밀번호 값 (비밀번호를 알아볼 수 없게 바꾼 값)
-    target: '',  // 대상 결과물
-    voter: ''    // 누른 사람 (알아볼 수 없게 바꾼 값)
+    kind: 'entry.1701457613',    // 기록 종류 (그룹 만들기, 검증, 검증 취소)
+    group: 'entry.742319868',   // 그룹 번호
+    name: 'entry.959786557',    // 그룹 이름
+    intro: 'entry.1090802173',   // 그룹 소개
+    pass: 'entry.171515780',    // 비밀번호 값 (비밀번호를 알아볼 수 없게 바꾼 값)
+    target: 'entry.1827549241',  // 대상 결과물
+    voter: 'entry.2061482021'    // 누른 사람 (알아볼 수 없게 바꾼 값)
   },
   // 검증한 사람이 이만큼 모이면 "검증됨" 표시가 붙는다.
   verifyGoal: 3,

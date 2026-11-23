@@ -3,6 +3,7 @@
   const grid = document.getElementById('grid');
   const count = document.getElementById('count');
   let projects = [];
+  let data = null;
   let selected = '전체';
 
   function render() {
@@ -22,13 +23,14 @@
       grid.style.display = 'block';
     } else {
       grid.style.display = '';
-      grid.replaceChildren(...shown.map(projectCard));
+      grid.replaceChildren(...shown.map((p) => projectCard(p, null, data)));
     }
   }
 
-  loadProjects()
-    .then((list) => {
-      projects = list.filter((p) => !p.private); // 비공개 결과물은 그룹 화면에서만 보여 준다.
+  loadBoard()
+    .then((board) => {
+      data = board.data;
+      projects = board.projects.filter((p) => !p.private); // 비공개 결과물은 그룹 화면에서만 보여 준다.
       render();
     })
     .catch((err) => {

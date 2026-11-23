@@ -1,4 +1,4 @@
-// 비밀번호 그룹: 그룹 만들기, 들어가기, 검증 기록.
+// 비밀번호 그룹: 방 만들기, 들어가기, 검증 기록. 평가 금액 기록도 같은 그룹 폼으로 보낸다.
 // 서버가 없는 사이트라서 진짜 보안 기능은 아니다.
 // - 비밀번호는 원문 대신 알아볼 수 없게 바꾼 값(PBKDF2-SHA256)만 공개 시트에 남는다.
 // - 시트와 저장소는 공개라서, 마음먹으면 비공개 결과물의 내용도 볼 수 있다.
@@ -41,7 +41,7 @@
 
   var loading = null;
   function load(force) {
-    if (!enabled) return Promise.resolve({ groups: [], votes: {} });
+    if (!enabled) return Promise.resolve({ groups: [], votes: {}, valueEvents: [] });
     if (loading && !force) return loading;
     loading = fetch(config.groupSheetCsvUrl, { cache: 'no-store' })
       .then(function (res) {
@@ -99,10 +99,11 @@
     return fetch(config.groupFormAction, { method: 'POST', mode: 'no-cors', body: body });
   }
 
-  function createGroup(name, intro, password) {
+  // 방은 구글 로그인한 사람만 만들 수 있고, 만든 사람의 계정 번호가 방장으로 남는다.
+  function createGroup(name, intro, password, owner) {
     var id = SheetData.groupKey(name);
     return passKey(id, password).then(function (key) {
-      return send({ kind: '그룹 만들기', group: id, name: name, intro: intro, pass: key }).then(function () {
+      return send({ kind: '그룹 만들기', group: id, name: name, intro: intro, pass: key, voter: owner }).then(function () {
         join(id, name, key);
         return id;
       });
@@ -126,8 +127,14 @@
     return send({ kind: on ? '검증' : '검증 취소', group: groupId, target: target, voter: voterId() });
   }
 
+  // 평가 금액 기록. 그룹 폼에 평가 질문 세 개가 있어야 쓸 수 있다.
+  var valueReady = enabled && Boolean(fields.value && fields.improved && fields.memo);
+  function record(values) { return send(values); }
+
   globalThis.Groups = {
     enabled: enabled,
+    valueReady: valueReady,
+    record: record,
     goal: GOAL,
     load: load,
     passKey: passKey,

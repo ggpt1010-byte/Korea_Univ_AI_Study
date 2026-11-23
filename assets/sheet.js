@@ -63,6 +63,26 @@
     return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
   }
 
+  // "사진 주소" 칸: 한 줄에 하나씩 적은 https 주소를 최대 5개까지 쓴다.
+  function imageList(value) {
+    var out = [];
+    String(value || '').split(/[\s,]+/).forEach(function (part) {
+      var url = webUrl(part);
+      if (url && url.indexOf('https:') === 0 && out.indexOf(url) === -1 && out.length < 5) out.push(url);
+    });
+    return out;
+  }
+
+  // 구글 시트의 타임스탬프("2026. 11. 24 오전 1:16:26", 한국 시간)를 밀리초로 바꾼다. 못 읽으면 0.
+  function stampTime(stamp) {
+    var m = /(\d{4})\D+(\d{1,2})\D+(\d{1,2})\D*?(오전|오후|AM|PM)?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/i.exec(String(stamp));
+    if (!m) return 0;
+    var h = Number(m[5]) % 12;
+    if (m[4] && /오후|pm/i.test(m[4])) h += 12;
+    else if (!m[4]) h = Number(m[5]);
+    return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), h, Number(m[6]), Number(m[7] || 0)) - 9 * 3600 * 1000;
+  }
+
   // rows: parseCsv 결과. 첫 줄은 질문 이름이다.
   function rowsToProjects(rows) {
     if (!rows.length) return [];
@@ -78,7 +98,8 @@
       hidden: findColumn(head, ['숨김']),
       owner: findColumn(head, ['계정번호', 'owner']),
       group: findColumn(head, ['그룹번호']),
-      visibility: findColumn(head, ['공개범위'])
+      visibility: findColumn(head, ['공개범위']),
+      images: findColumn(head, ['사진주소'])
     };
     if (col.title === -1 || col.url === -1) {
       throw new Error('시트에서 "프로젝트 이름"과 "체험 링크" 열을 찾지 못했어요.');
@@ -116,6 +137,7 @@
         owner: /^g[0-9a-f]{16}$/.test(owner) ? owner : '',
         group: group,
         private: isPrivate,
+        images: imageList(get(col.images)),
         row: i
       });
     }
@@ -128,8 +150,15 @@
     return 'k' + hashId('group|' + String(name).trim().toLowerCase().replace(/\s+/g, ' ')).slice(1);
   }
 
+  var VALUE_KINDS = ['분석 시작', '분석 취소', '가치 평가'];
+
+  function money(value) {
+    var n = Number(String(value || '').replace(/[^0-9]/g, ''));
+    return String(value || '').trim() !== '' && Number.isFinite(n) ? Math.min(n, 1e15) : null;
+  }
+
   function rowsToGroups(rows) {
-    var result = { groups: [], votes: {} };
+    var result = { groups: [], votes: {}, valueEvents: [] };
     if (!rows.length) return result;
     var head = rows[0];
     var col = {
@@ -139,7 +168,11 @@
       intro: findColumn(head, ['그룹소개']),
       pass: findColumn(head, ['비밀번호값']),
       target: findColumn(head, ['대상결과물']),
-      voter: findColumn(head, ['누른사람'])
+      voter: findColumn(head, ['누른사람']),
+      stamp: findColumn(head, ['타임스탬프', 'timestamp']),
+      value: findColumn(head, ['평가금액']),
+      improved: findColumn(head, ['개선시']),
+      memo: findColumn(head, ['평가메모'])
     };
     if (col.kind === -1 || col.group === -1) return result;
     var byId = {};
@@ -149,12 +182,31 @@
       var get = function (index) { return index === -1 || r[index] == null ? '' : r[index]; };
       var kind = clip(get(col.kind), 20);
       var id = clip(get(col.group), 20);
+      // 평가 기록: 그룹이 없는 공개 결과물에도 달 수 있다. 누가 달았는지는 화면에서 권한을 따져 거른다.
+      if (VALUE_KINDS.indexOf(kind) !== -1) {
+        var vt = clip(get(col.target), 60);
+        var by = clip(get(col.voter), 40);
+        if (!/^[a-z0-9-]{1,60}$/.test(vt) || !/^g[0-9a-f]{16}$/.test(by)) continue;
+        var ev = { kind: kind, target: vt, by: by, at: stampTime(get(col.stamp)), row: i };
+        if (kind === '가치 평가') {
+          ev.value = money(get(col.value));
+          ev.improved = money(get(col.improved));
+          ev.memo = clip(get(col.memo), 2000);
+          if (ev.value === null || ev.improved === null) continue;
+        }
+        result.valueEvents.push(ev);
+        continue;
+      }
       if (!/^k[0-9a-f]{8}$/.test(id)) continue;
       if (kind === '그룹 만들기') {
         var name = clip(get(col.name), 40);
         var pass = clip(get(col.pass), 80);
         if (!name || groupKey(name) !== id || !/^[0-9a-f]{32,64}$/.test(pass) || byId[id]) continue;
-        byId[id] = { id: id, name: name, intro: clip(get(col.intro), 200), pass: pass, row: i };
+        var maker = clip(get(col.voter), 40);
+        byId[id] = {
+          id: id, name: name, intro: clip(get(col.intro), 200), pass: pass, row: i,
+          owner: /^g[0-9a-f]{16}$/.test(maker) ? maker : ''   // 방을 만든 사람(방장)의 계정 번호
+        };
         result.groups.push(byId[id]);
       } else if (kind === '검증' || kind === '검증 취소') {
         var target = clip(get(col.target), 20);
@@ -176,6 +228,6 @@
 
   root.SheetData = {
     parseCsv: parseCsv, rowsToProjects: rowsToProjects, hashId: hashId,
-    rowsToGroups: rowsToGroups, groupKey: groupKey
+    rowsToGroups: rowsToGroups, groupKey: groupKey, stampTime: stampTime
   };
 })(globalThis);

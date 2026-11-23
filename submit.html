@@ -18,8 +18,7 @@ AI개발모임
 </a>
 <nav class="site-nav" aria-label="주요 메뉴">
 <a class="nav-link" href="index.html">결과물 둘러보기</a>
-<a class="nav-link" href="groups.html">그룹</a>
-<a class="nav-link" href="estimate.html">게임 수익 평가</a>
+<a class="nav-link" href="groups.html">그룹 들어가기</a>
 <a class="btn btn-primary" href="submit.html">내 결과물 올리기</a>
 </nav>
 <div class="account" id="account"></div>
@@ -37,6 +36,7 @@ AI개발모임
 <section class="page-head">
 <h1>내 결과물 올리기</h1>
 <p>로그인 없이 바로 올릴 수 있어요. 별표가 붙은 항목은 꼭 적어 주세요.</p>
+<p>올리면 매니저가 AI로 분석해서 <strong>평가 금액</strong>과 <strong>개선 시 예상 금액</strong>을 달아 드려요. 그전에는 "요청 중"으로 보여요.</p>
 </section>
 
 <form class="form" id="form" novalidate>
@@ -75,16 +75,21 @@ AI개발모임
 <label for="f-description">자세한 설명</label>
 <textarea id="f-description" name="description" maxlength="3000" placeholder="왜 만들었는지, 어떻게 쓰는지, 무엇으로 만들었는지 자유롭게 적어 주세요"></textarea>
 </div>
+<div class="field" id="images-box" hidden>
+<label for="f-images">사진 주소 (최대 5개)</label>
+<textarea id="f-images" name="images" rows="3" maxlength="2500" placeholder="https://… 한 줄에 하나씩" aria-describedby="f-images-hint"></textarea>
+<p class="hint" id="f-images-hint">카드에서 넘겨 볼 사진이에요. https로 시작하는 이미지 주소를 한 줄에 하나씩 넣어 주세요. 체험 링크의 첫 화면은 따로 넣지 않아도 마지막 장에 자동으로 들어가요.</p>
+</div>
 <fieldset class="field group-box" id="group-box" hidden>
-<legend>그룹과 공개 범위</legend>
+<legend>방과 공개 범위</legend>
 <div class="field">
-<label for="f-group">올릴 그룹</label>
+<label for="f-group">올릴 방</label>
 <select id="f-group" name="group" aria-describedby="f-group-hint"></select>
-<p class="hint" id="f-group-hint">내가 들어간 그룹만 고를 수 있어요. 그룹은 <a href="groups.html">그룹 화면</a>에서 만들거나 들어갈 수 있어요.</p>
+<p class="hint" id="f-group-hint">내가 들어간 방만 고를 수 있어요. 방은 <a href="groups.html">그룹 들어가기</a>에서 만들거나 들어갈 수 있어요.</p>
 </div>
 <div class="radio-row" role="radiogroup" aria-label="공개 범위">
 <label class="radio"><input type="radio" name="visibility" value="공개" checked> 공개: 누구나 목록에서 볼 수 있어요</label>
-<label class="radio"><input type="radio" name="visibility" value="비공개"> 비공개: 이 그룹 멤버만 사이트에서 볼 수 있어요</label>
+<label class="radio"><input type="radio" name="visibility" value="비공개"> 비공개: 이 방 멤버만 사이트에서 볼 수 있어요</label>
 </div>
 <p class="hint" id="f-vis-hint">비공개도 공개 구글 시트에는 남아서, 마음먹고 찾으면 볼 수 있어요. 정말 숨겨야 하는 내용은 적지 마세요.</p>
 </fieldset>
@@ -99,7 +104,7 @@ AI개발모임
 <section class="done" id="done" hidden>
 <svg aria-hidden="true" width="56" height="56" viewBox="0 0 56 56" fill="none" stroke="#3451D1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="28" cy="28" r="24"></circle><path d="M18 29l7 7 13-15"></path></svg>
 <h1 tabindex="-1" id="done-title">결과물을 보냈어요</h1>
-<p>목록에는 몇 분 안에 나타나요. 첫 화면 미리보기 이미지는 한 시간 안에 자동으로 들어가요.</p>
+<p>목록에는 몇 분 안에 나타나요. 첫 화면 미리보기 이미지는 한 시간 안에 자동으로 들어가요. 예상 가치는 매니저가 분석하기 전까지 "요청 중"으로 보여요.</p>
 <div class="actions">
 <a class="btn btn-primary" href="index.html">목록으로 가기</a>
 <a class="btn btn-plain" id="done-mine" href="me.html" hidden>내 정보에서 보기</a>

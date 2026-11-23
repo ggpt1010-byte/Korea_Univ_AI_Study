@@ -44,6 +44,13 @@
     loginBox.hidden = true;
   }
 
+  // 사진 주소. 결과물 폼에 "사진 주소" 질문이 있을 때만 보여 준다.
+  const imagesBox = document.getElementById('images-box');
+  if (fields.images) imagesBox.hidden = false;
+  function imageUrls() {
+    return form.elements.images.value.split(/[\s,]+/).map((v) => v.trim()).filter(Boolean);
+  }
+
   // 그룹과 공개 범위. 결과물 폼에 두 질문이 있고 그룹 기능이 켜져 있을 때만 보여 준다.
   const G = globalThis.Groups;
   const groupBox = document.getElementById('group-box');
@@ -60,7 +67,7 @@
       const mine = G.myGroups(data);
       const select = form.elements.group;
       select.replaceChildren(
-        el('option', { value: '', text: '그룹 없이 올리기' }),
+        el('option', { value: '', text: '방 없이 올리기' }),
         ...mine.map((g) => el('option', { value: g.id, text: g.name }))
       );
       const wanted = new URLSearchParams(location.search).get('group');
@@ -97,11 +104,15 @@
     if (!data.summary) return fail('한 줄 소개를 적어 주세요.', form.elements.summary);
     if (!data.author) return fail('만든 사람을 적어 주세요.', form.elements.author);
     if (!isWebUrl(data.url)) return fail('체험 링크는 https:// 로 시작하는 주소로 적어 주세요.', form.elements.url);
+    const images = fields.images ? imageUrls() : [];
+    if (images.length > 5) return fail('사진 주소는 5개까지 넣을 수 있어요.', form.elements.images);
+    if (images.some((u) => !/^https:\/\//.test(u) || !isWebUrl(u))) return fail('사진 주소는 https:// 로 시작하는 주소로 한 줄에 하나씩 적어 주세요.', form.elements.images);
 
     const body = new URLSearchParams();
     names.forEach((n) => body.append(fields[n], data[n]));
     const me = account && account.current();
     if (me && fields.owner) body.append(fields.owner, me.owner);
+    if (images.length) body.append(fields.images, images.join('\n'));
     if (groupReady && form.elements.group.value) {
       body.append(fields.group, form.elements.group.value);
       body.append(fields.visibility, form.querySelector('input[name="visibility"]:checked').value);

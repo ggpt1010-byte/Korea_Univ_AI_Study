@@ -6,6 +6,7 @@
   let data = { groups: [], votes: {}, valueEvents: [] };
   let projects = [];
   let filter = '전체';
+  const boardState = { sort: 'likes' };
 
   function message(text, linkText, href) {
     root.replaceChildren(el('div', { class: 'empty' }, [
@@ -122,9 +123,10 @@
         grid(hidden, filter === '검증됨' ? '아직 검증된 비공개 결과물이 없어요.' : '아직 이 방에 올라온 비공개 결과물이 없어요.')
       ]),
       el('section', { class: 'list-section', 'aria-labelledby': 'open-title' }, [
-        sectionTitle('globe', '공개 결과물', open.length, 'open-title'),
-        grid(open, filter === '검증됨' ? '아직 이 방에서 검증한 공개 결과물이 없어요.' : '아직 공개 결과물이 없어요.')
-      ])
+        sectionTitle('globe', '공개 결과물', open.length, 'open-title')
+      ].concat(open.length
+        ? boardSections({ list: open, data: data, state: boardState, rerender: () => room(g), extraFor: verifyBox, idPrefix: 'room', title: '나머지 공개 결과물' })
+        : [grid(open, filter === '검증됨' ? '아직 이 방에서 검증한 공개 결과물이 없어요.' : '아직 공개 결과물이 없어요.')]))
     );
   }
 

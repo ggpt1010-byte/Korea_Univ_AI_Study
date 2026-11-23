@@ -34,7 +34,7 @@ AI개발모임
 
 <div class="stack" id="open" hidden>
 <section class="page-head">
-<h1>내 결과물 올리기</h1>
+<h1 id="submit-title">내 결과물 올리기</h1>
 <p>로그인 없이 바로 올릴 수 있어요. 별표가 붙은 항목은 꼭 적어 주세요.</p>
 <p>올리면 매니저가 AI로 분석해서 <strong>평가 금액</strong>과 <strong>개선 시 예상 금액</strong>을 달아 드려요. 그전에는 "요청 중"으로 보여요.</p>
 </section>
@@ -70,6 +70,10 @@ AI개발모임
 <label for="f-url">체험 링크 *</label>
 <input id="f-url" name="url" type="url" required maxlength="500" placeholder="https://" aria-describedby="f-url-hint">
 <p class="hint" id="f-url-hint">다른 모임원이 눌러서 바로 써 볼 수 있는 주소를 넣어 주세요. 이 주소의 첫 화면이 목록과 상세 화면에 미리보기로 보여요.</p>
+</div>
+<div class="field" id="changes-box" hidden>
+<label for="f-changes">바뀐 점 *</label>
+<textarea id="f-changes" name="changes" maxlength="1000" placeholder="지난 버전에서 무엇을 고치거나 더했는지 적어 주세요"></textarea>
 </div>
 <div class="field">
 <label for="f-description">자세한 설명</label>
@@ -117,6 +121,7 @@ AI개발모임
 <script src="assets/config.js"></script>
 <script src="assets/account.js"></script>
 <script src="assets/sheet.js"></script>
+<script src="assets/app.js"></script>
 <script src="assets/groups.js"></script>
 <script src="assets/submit.js"></script>
 </body>

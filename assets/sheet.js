@@ -99,7 +99,9 @@
       owner: findColumn(head, ['계정번호', 'owner']),
       group: findColumn(head, ['그룹번호']),
       visibility: findColumn(head, ['공개범위']),
-      images: findColumn(head, ['사진주소'])
+      images: findColumn(head, ['사진주소']),
+      parent: findColumn(head, ['원래결과물']),
+      changes: findColumn(head, ['바뀐점', '바뀜점'])
     };
     if (col.title === -1 || col.url === -1) {
       throw new Error('시트에서 "프로젝트 이름"과 "체험 링크" 열을 찾지 못했어요.');
@@ -138,10 +140,60 @@
         group: group,
         private: isPrivate,
         images: imageList(get(col.images)),
+        parent: /^[a-z0-9-]{1,60}$/.test(clip(get(col.parent), 60)) ? clip(get(col.parent), 60) : '',
+        changes: clip(get(col.changes), 1000),
         row: i
       });
     }
     return list;
+  }
+
+  // 버전 묶기: "원래 결과물" 칸에 다른 결과물 번호가 적힌 줄은 그 결과물의 새 버전이다.
+  // 원래 결과물과 같은 계정으로 올린 것만 인정한다(로그인하지 않고 올린 결과물은 새 버전을 받을 수 없다).
+  // 묶은 결과물은 번호(id), 그룹, 공개 범위, 만든 날짜는 v1 것을 쓰고, 나머지 내용은 최신 버전 것을 쓴다.
+  // 좋아요와 조회수는 v1 번호로 모이고, 예상 가치는 버전마다(valueId) 따로 단다.
+  function mergeVersions(list) {
+    var byId = {};
+    list.forEach(function (p) { byId[p.id] = p; });
+    function rootOf(p) {
+      var seen = {};
+      while (p && p.parent && byId[p.parent] && !seen[p.id]) { seen[p.id] = true; p = byId[p.parent]; }
+      return p;
+    }
+    var chains = {};
+    var out = [];
+    list.forEach(function (p) {
+      var root = p.parent ? rootOf(p) : p;
+      var valid = p === root || (root && root !== p && root.owner && p.owner === root.owner);
+      if (!valid) {
+        if (p.parent) return; // 주인이 다른 새 버전은 버린다.
+        root = p;
+      }
+      (chains[root.id] = chains[root.id] || []).push(p);
+    });
+    Object.keys(chains).forEach(function (rootId) {
+      var root = byId[rootId];
+      var chain = chains[rootId].slice().sort(function (a, b) {
+        if (a === root) return -1;
+        if (b === root) return 1;
+        return (String(a.createdAt) + '#' + String(a.row || 0).padStart(6, '0'))
+          .localeCompare(String(b.createdAt) + '#' + String(b.row || 0).padStart(6, '0'));
+      });
+      var last = chain[chain.length - 1];
+      var merged = Object.assign({}, last, {
+        id: root.id, group: root.group, private: root.private, createdAt: root.createdAt, owner: root.owner,
+        parent: '', row: root.row,
+        updatedAt: last.createdAt || root.createdAt,
+        version: chain.length,
+        valueId: String(last.id),
+        shotId: String(last.id),
+        versions: chain.map(function (v, i) {
+          return { v: i + 1, id: String(v.id), title: v.title, url: v.url, changes: i ? v.changes : '', createdAt: v.createdAt };
+        })
+      });
+      out.push(merged);
+    });
+    return out;
   }
 
   // 그룹 시트(그룹 만들기, 검증 기록)를 읽는다.
@@ -253,6 +305,6 @@
 
   root.SheetData = {
     parseCsv: parseCsv, rowsToProjects: rowsToProjects, hashId: hashId,
-    rowsToGroups: rowsToGroups, groupKey: groupKey, stampTime: stampTime
+    rowsToGroups: rowsToGroups, groupKey: groupKey, stampTime: stampTime, mergeVersions: mergeVersions
   };
 })(globalThis);

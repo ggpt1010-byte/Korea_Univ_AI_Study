@@ -361,3 +361,45 @@ ol.group-list { list-style: none; margin: 0; padding: 0; }
 }
 .like-mini:hover { background: #FDF0F3; color: #A2213F; }
 .like-mini[aria-pressed="true"] { color: #A2213F; }
+
+/* 결과물 판: 이번 주 새 결과물, 순위 */
+.board { display: flex; flex-direction: column; gap: 40px; }
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 1040px) { .grid-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 780px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 540px) { .grid-4 { grid-template-columns: minmax(0, 1fr); } }
+.grid-4 .card-body { padding: 16px; }
+.grid-4 .card h2 { font-size: 18px; }
+.week-box {
+  display: flex; flex-direction: column; gap: 18px; padding: 22px; border-radius: 20px;
+  border: 2px solid var(--accent); background: var(--tint);
+}
+.week-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.sort-box { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--body); }
+.sort-select {
+  min-height: 44px; padding: 0 12px; border: 1px solid var(--field-line); border-radius: 10px;
+  background: var(--surface); color: var(--ink); font-family: inherit; font-size: 15px;
+}
+.card { position: relative; }
+.card.is-rank { border-width: 3px; }
+.card.rank-1 { border-color: #C9A227; box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.18); }
+.card.rank-2 { border-color: #9AA3AF; box-shadow: 0 0 0 3px rgba(154, 163, 175, 0.2); }
+.card.rank-3 { border-color: #B87333; box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.18); }
+.card.rank-4 { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(52, 81, 209, 0.15); }
+.rank-badge {
+  position: absolute; top: 10px; left: 10px; z-index: 1; padding: 4px 10px; border-radius: 999px;
+  background: var(--accent); color: #FFFFFF; font-size: 14px; font-weight: 700;
+}
+.rank-1 .rank-badge { background: #8A6A00; }
+.rank-2 .rank-badge { background: #545D6A; }
+.rank-3 .rank-badge { background: #8A4B1D; }
+
+/* 버전 */
+.tag-version { background: var(--ink); color: #FFFFFF; }
+.version-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.version-item { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; }
+.version-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.version-item p { margin: 0; }
+.grid-4 .card-top { flex-direction: column; gap: 8px; }
+.grid-4 .card-when { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 10px; text-align: left; }
+.card-when span { white-space: nowrap; }

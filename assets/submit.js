@@ -44,6 +44,30 @@
     loginBox.hidden = true;
   }
 
+  // 새 버전 올리기: submit.html?parent=<결과물 번호>. 같은 구글 계정으로 로그인한 원래 작성자만 올릴 수 있다.
+  const parentId = new URLSearchParams(location.search).get('parent') || '';
+  let parent = null;
+  const versionReady = Boolean(fields.parent && fields.changes);
+  if (parentId && versionReady) {
+    document.getElementById('submit-title').textContent = '새 버전 올리기';
+    document.title = '새 버전 올리기 · AI개발모임';
+    document.getElementById('changes-box').hidden = false;
+    loadProjects().then((list) => {
+      parent = list.find((p) => String(p.id) === parentId) || null;
+      if (!parent) { fail('원래 결과물을 찾지 못했어요. 주소를 확인해 주세요.'); return; }
+      const f = form.elements;
+      f.title.value = parent.title;
+      f.summary.value = parent.summary;
+      f.author.value = parent.author;
+      f.category.value = parent.category;
+      f.url.value = parent.url;
+      f.description.value = parent.description || '';
+      if (f.images) f.images.value = (parent.images || []).join('\n');
+      const lead = document.querySelector('.page-head p');
+      lead.textContent = '"' + parent.title + '"의 v' + ((parent.version || 1) + 1) + '를 올려요. 바뀐 내용을 고치고, 바뀐 점을 적어 주세요. 방과 공개 범위는 처음 버전을 따라가요.';
+    }).catch(() => fail('원래 결과물을 불러오지 못했어요. 잠시 뒤에 새로고침해 주세요.'));
+  }
+
   // 사진 주소. 결과물 폼에 "사진 주소" 질문이 있을 때만 보여 준다.
   const imagesBox = document.getElementById('images-box');
   if (fields.images) imagesBox.hidden = false;
@@ -62,7 +86,7 @@
       if (!hasGroup && r.value === '공개') r.checked = true;
     });
   }
-  if (groupReady) {
+  if (groupReady && !parentId) {
     G.load().catch(() => null).then((data) => {
       const mine = G.myGroups(data);
       const select = form.elements.group;
@@ -104,6 +128,12 @@
     if (!data.summary) return fail('한 줄 소개를 적어 주세요.', form.elements.summary);
     if (!data.author) return fail('만든 사람을 적어 주세요.', form.elements.author);
     if (!isWebUrl(data.url)) return fail('체험 링크는 https:// 로 시작하는 주소로 적어 주세요.', form.elements.url);
+    if (parentId) {
+      const me0 = account && account.current();
+      if (!parent) return fail('원래 결과물을 불러오는 중이에요. 잠시 뒤에 다시 눌러 주세요.');
+      if (!me0 || me0.owner !== parent.owner) return fail('새 버전은 처음 올린 사람이 같은 구글 계정으로 로그인해야 올릴 수 있어요.');
+      if (!form.elements.changes.value.trim()) return fail('바뀐 점을 적어 주세요.', form.elements.changes);
+    }
     const images = fields.images ? imageUrls() : [];
     if (images.length > 5) return fail('사진 주소는 5개까지 넣을 수 있어요.', form.elements.images);
     if (images.some((u) => !/^https:\/\//.test(u) || !isWebUrl(u))) return fail('사진 주소는 https:// 로 시작하는 주소로 한 줄에 하나씩 적어 주세요.', form.elements.images);
@@ -113,6 +143,10 @@
     const me = account && account.current();
     if (me && fields.owner) body.append(fields.owner, me.owner);
     if (images.length) body.append(fields.images, images.join('\n'));
+    if (parentId && parent) {
+      body.append(fields.parent, String(parent.id));
+      body.append(fields.changes, form.elements.changes.value.trim().slice(0, 1000));
+    }
     if (groupReady && form.elements.group.value) {
       body.append(fields.group, form.elements.group.value);
       body.append(fields.visibility, form.querySelector('input[name="visibility"]:checked').value);

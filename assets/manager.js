@@ -51,7 +51,7 @@
     var out = { state: 'requested' };
     if (!p || !data || !Array.isArray(data.valueEvents)) return out;
     data.valueEvents.forEach(function (ev) {
-      if (ev.target !== String(p.id) || !canValue(ev.by, p, data)) return;
+      if (ev.target !== String(p.valueId || p.id) || !canValue(ev.by, p, data)) return;
       if (ev.kind === '가치 평가') {
         out = { state: 'done', value: ev.value, improved: ev.improved, memo: ev.memo, by: ev.by, at: ev.at };
       } else if (ev.kind === '분석 시작') {
@@ -73,7 +73,7 @@
 
   function send(kind, p, extra) {
     var a = me();
-    var values = Object.assign({ kind: kind, group: p.group || '', target: String(p.id), voter: a ? a.owner : '' }, extra || {});
+    var values = Object.assign({ kind: kind, group: p.group || '', target: String(p.valueId || p.id), voter: a ? a.owner : '' }, extra || {});
     return Groups.record(values);
   }
 

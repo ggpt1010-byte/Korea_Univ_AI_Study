@@ -26,8 +26,8 @@ async function loadSubmitted() {
 // 최근에 올라온 결과물이 먼저 오도록 정렬해서 돌려준다.
 async function loadProjects() {
   const [base, submitted] = await Promise.all([fetchJson('data/projects.json'), loadSubmitted()]);
-  const key = (p) => String(p.createdAt || '') + '#' + String(p.row || 0).padStart(6, '0');
-  return submitted.concat(base).sort((a, b) => key(b).localeCompare(key(a)));
+  const key = (p) => String(p.updatedAt || p.createdAt || '') + '#' + String(p.row || 0).padStart(6, '0');
+  return SheetData.mergeVersions(submitted.concat(base)).sort((a, b) => key(b).localeCompare(key(a)));
 }
 
 function el(tag, attrs, children) {
@@ -58,7 +58,7 @@ function photoList(project) {
   [project.image].concat(project.images || []).forEach((src) => {
     if (src && list.indexOf(src) === -1) list.push(src);
   });
-  list.push('shots/' + encodeURIComponent(project.id) + '.jpg');
+  list.push('shots/' + encodeURIComponent(project.shotId || project.id) + '.jpg');
   return list;
 }
 
@@ -188,9 +188,12 @@ function projectCard(p, extra, data) {
     thumbnail(p),
     el('div', { class: 'card-body' }, [
       el('div', { class: 'card-top' }, [
-        el('div', { class: 'tag-row' }, [el('span', { class: 'tag', text: p.category || '기타' }), visibilityTag(p)]),
+        el('div', { class: 'tag-row' }, [
+          el('span', { class: 'tag', text: p.category || '기타' }), visibilityTag(p),
+          p.version > 1 ? el('span', { class: 'tag tag-version', text: 'v' + p.version }) : null
+        ]),
         el('div', { class: 'card-when' }, [
-          shortDate(p.createdAt) ? el('span', { text: shortDate(p.createdAt) }) : null,
+          shortDate(p.updatedAt || p.createdAt) ? el('span', { text: shortDate(p.updatedAt || p.createdAt) }) : null,
           el('span', { text: p.author })
         ])
       ]),

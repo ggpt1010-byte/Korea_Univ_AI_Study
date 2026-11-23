@@ -101,6 +101,42 @@ const ICONS = {
   lock: '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>',
   globe: '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c1.8 1.7 2.6 3.7 2.6 6S9.8 12.3 8 14M8 2C6.2 3.7 5.4 5.7 5.4 8s.8 4.3 2.6 6"/></svg>'
 };
+ICONS.heart = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M8 13.5S2 10 2 5.8A3 3 0 018 4.4a3 3 0 016 1.4C14 10 8 13.5 8 13.5z"/></svg>';
+ICONS.heartOn = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M8 13.5S2 10 2 5.8A3 3 0 018 4.4a3 3 0 016 1.4C14 10 8 13.5 8 13.5z"/></svg>';
+ICONS.eye = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>';
+
+// 좋아요 수와 조회수. 아이콘과 숫자를 함께 쓰고, 화면 읽기 프로그램에는 글로 읽힌다.
+function statItem(icon, label, n, extraClass) {
+  const item = el('span', { class: 'stat-item' + (extraClass ? ' ' + extraClass : '') });
+  item.innerHTML = ICONS[icon];
+  item.append(el('span', { class: 'sr-only', text: label + ' ' }), document.createTextNode(Number(n || 0).toLocaleString('ko-KR')));
+  return item;
+}
+// 좋아요 버튼. 카드와 상세 화면에서 같이 쓴다. 누르면 바로 숫자가 바뀌고, 다른 사람에게는 몇 분 뒤에 반영된다.
+function likeButton(p, data, extraClass, withLabel) {
+  const G = globalThis.Groups;
+  if (!G || !G.enabled) return statItem('heart', '좋아요', 0);
+  const button = el('button', { type: 'button', class: 'like-btn ' + (extraClass || '') });
+  function draw() {
+    const likers = G.likersFor(data, String(p.id));
+    const mine = likers.indexOf(G.voterId()) !== -1;
+    button.setAttribute('aria-pressed', String(mine));
+    button.setAttribute('aria-label', (mine ? '좋아요 취소' : '좋아요') + ', 지금 ' + likers.length + '개');
+    button.innerHTML = mine ? ICONS.heartOn : ICONS.heart;
+    button.append(document.createTextNode((withLabel ? '좋아요 ' : '') + likers.length.toLocaleString('ko-KR')));
+  }
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    const mine = button.getAttribute('aria-pressed') === 'true';
+    button.disabled = true;
+    G.like(String(p.id), !mine).catch(() => {}).then(() => { button.disabled = false; draw(); });
+  });
+  draw();
+  return button;
+}
+
+function viewCount(p, data) { const G = globalThis.Groups; return G && G.viewsFor ? G.viewsFor(data, String(p.id)) : 0; }
+
 function visibilityTag(p) {
   const tag = el('span', { class: 'tag ' + (p.private ? 'tag-private' : 'tag-public') });
   tag.innerHTML = p.private ? ICONS.lock : ICONS.globe;
@@ -111,7 +147,7 @@ function visibilityTag(p) {
 // 결과물과 그룹 기록(검증, 평가 금액)을 함께 불러온다. 그룹 기록을 못 읽어도 결과물은 보여 준다.
 function loadBoard() {
   const G = globalThis.Groups;
-  const empty = { groups: [], votes: {}, valueEvents: [] };
+  const empty = { groups: [], votes: {}, valueEvents: [], likes: {}, views: {} };
   return Promise.all([loadProjects(), G ? G.load().catch(() => empty) : Promise.resolve(empty)])
     .then(([projects, data]) => ({ projects: projects, data: data }));
 }
@@ -160,6 +196,7 @@ function projectCard(p, extra, data) {
       ]),
       el('h2', {}, [el('a', { href: projectLink(p), text: p.title })]),
       el('p', { class: 'summary', text: p.summary }),
+      el('div', { class: 'card-stats' }, [likeButton(p, data, 'like-mini'), statItem('eye', '조회수', viewCount(p, data))]),
       valueLine(p, data),
       extra || null,
       el('a', { class: 'btn btn-outline btn-block', href: projectLink(p), text: '자세히 보고 체험하기' })

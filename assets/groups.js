@@ -41,7 +41,7 @@
 
   var loading = null;
   function load(force) {
-    if (!enabled) return Promise.resolve({ groups: [], votes: {}, valueEvents: [] });
+    if (!enabled) return Promise.resolve({ groups: [], votes: {}, valueEvents: [], likes: {}, views: {} });
     if (loading && !force) return loading;
     loading = fetch(config.groupSheetCsvUrl, { cache: 'no-store' })
       .then(function (res) {
@@ -127,6 +127,38 @@
     return send({ kind: on ? '검증' : '검증 취소', group: groupId, target: target, voter: voterId() });
   }
 
+  // 좋아요: 검증과 같은 방식. 로그인했으면 계정당, 아니면 브라우저당 하나로 센다.
+  var LIKE_KEY = 'korai.likes.v1';
+  var VIEW_KEY = 'korai.views.v1';
+  function likersFor(data, target) {
+    var list = (((data && data.likes) || {})[target] || []).slice();
+    var mine = readJson(LIKE_KEY)[target];
+    var me = voterId();
+    var has = list.indexOf(me) !== -1;
+    if (mine === true && !has) list.push(me);
+    if (mine === false && has) list.splice(list.indexOf(me), 1);
+    return list;
+  }
+  function like(target, on) {
+    var local = readJson(LIKE_KEY);
+    local[target] = Boolean(on);
+    writeJson(LIKE_KEY, local);
+    return send({ kind: on ? '좋아요' : '좋아요 취소', target: target, voter: voterId() });
+  }
+  function today() { return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
+  // 조회: 상세 화면을 열 때 이 브라우저에서 그날 처음이면 한 번 보낸다.
+  function view(target) {
+    var seen = readJson(VIEW_KEY);
+    var day = today();
+    Object.keys(seen).forEach(function (k) { if (seen[k] !== day) delete seen[k]; }); // 지난 날 기록은 지운다.
+    if (seen[target] === day) { writeJson(VIEW_KEY, seen); return false; }
+    seen[target] = day;
+    writeJson(VIEW_KEY, seen);
+    send({ kind: '조회', target: target, voter: voterId() }).catch(function () {});
+    return true;
+  }
+  function viewsFor(data, target) { return (((data && data.views) || {})[target] || 0); }
+
   // 평가 금액 기록. 그룹 폼에 평가 질문 세 개가 있어야 쓸 수 있다.
   var valueReady = enabled && Boolean(fields.value && fields.improved && fields.memo);
   function record(values) { return send(values); }
@@ -135,6 +167,10 @@
     enabled: enabled,
     valueReady: valueReady,
     record: record,
+    likersFor: likersFor,
+    like: like,
+    view: view,
+    viewsFor: viewsFor,
     goal: GOAL,
     load: load,
     passKey: passKey,

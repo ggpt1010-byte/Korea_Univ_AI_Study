@@ -158,7 +158,7 @@
   }
 
   function rowsToGroups(rows) {
-    var result = { groups: [], votes: {}, valueEvents: [] };
+    var result = { groups: [], votes: {}, valueEvents: [], likes: {}, views: {} };
     if (!rows.length) return result;
     var head = rows[0];
     var col = {
@@ -177,6 +177,8 @@
     if (col.kind === -1 || col.group === -1) return result;
     var byId = {};
     var latest = {};
+    var likeLatest = {};
+    var viewSeen = {};
     for (var i = 1; i < rows.length; i++) {
       var r = rows[i];
       var get = function (index) { return index === -1 || r[index] == null ? '' : r[index]; };
@@ -195,6 +197,20 @@
           if (ev.value === null || ev.improved === null) continue;
         }
         result.valueEvents.push(ev);
+        continue;
+      }
+      // 좋아요와 조회: 그룹과 상관없이 결과물마다 센다.
+      if (kind === '좋아요' || kind === '좋아요 취소' || kind === '조회') {
+        var lt = clip(get(col.target), 60);
+        var who = clip(get(col.voter), 40);
+        if (!/^[a-z0-9-]{1,60}$/.test(lt) || !/^[gd][0-9a-f]{16}$/.test(who)) continue;
+        if (kind === '조회') {
+          // 같은 사람은 하루(한국 시간)에 한 번만 센다.
+          var day = new Date(stampTime(get(col.stamp)) + 9 * 3600 * 1000).toISOString().slice(0, 10);
+          viewSeen[lt + '|' + who + '|' + day] = true;
+        } else {
+          likeLatest[lt + '|' + who] = kind === '좋아요';
+        }
         continue;
       }
       if (!/^k[0-9a-f]{8}$/.test(id)) continue;
@@ -222,6 +238,15 @@
       var bucket = result.votes[parts[0]] = result.votes[parts[0]] || {};
       var voters = bucket[parts[1]] = bucket[parts[1]] || [];
       if (latest[key]) voters.push(parts[2]);
+    });
+    Object.keys(likeLatest).forEach(function (key) {
+      if (!likeLatest[key]) return;
+      var parts = key.split('|');
+      (result.likes[parts[0]] = result.likes[parts[0]] || []).push(parts[1]);
+    });
+    Object.keys(viewSeen).forEach(function (key) {
+      var t = key.split('|')[0];
+      result.views[t] = (result.views[t] || 0) + 1;
     });
     return result;
   }

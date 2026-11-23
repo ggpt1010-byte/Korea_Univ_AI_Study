@@ -2,7 +2,7 @@
   const root = document.getElementById('detail');
   const id = new URLSearchParams(location.search).get('id');
   const M = globalThis.Manager;
-  let data = { groups: [], votes: {}, valueEvents: [] };
+  let data = { groups: [], votes: {}, valueEvents: [], likes: {}, views: {} };
 
   function section(title, body) {
     return el('section', {}, [el('h2', { text: title }), body]);
@@ -39,7 +39,11 @@
     return box;
   }
 
+  let views = 0;
   function render(p) {
+    const G = globalThis.Groups;
+    views = G && G.viewsFor ? G.viewsFor(data, String(p.id)) : 0;
+    if (G && G.enabled && G.view(String(p.id))) views += 1; // 오늘 처음 연 것이면 바로 1을 더해 보여 준다.
     document.title = p.title + ' · AI개발모임';
     const url = safeUrl(p.url);
     const meta = ['만든 사람 ' + p.author, formatDate(p.createdAt)].filter(Boolean).join(' · ');
@@ -48,7 +52,8 @@
       url
         ? el('a', { class: 'btn btn-primary btn-lg', href: url, target: '_blank', rel: 'noopener noreferrer', text: '체험하러 가기' })
         : el('span', { class: 'meta', text: '체험 링크가 올바르지 않아요.' }),
-      el('a', { class: 'btn btn-plain btn-lg', href: '#feedback', text: '피드백 남기기' })
+      el('a', { class: 'btn btn-plain btn-lg', href: '#feedback', text: '피드백 남기기' }),
+      likeButton(p, data, 'btn btn-plain btn-lg', true)
     ]);
 
     const panel = el('div', { class: 'panel' });
@@ -70,7 +75,7 @@
         el('div', { class: 'tag-row' }, [el('span', { class: 'tag', text: p.category || '기타' }), visibilityTag(p)]),
         el('h1', { text: p.title }),
         el('p', { class: 'summary', text: p.summary }),
-        el('p', { class: 'meta', text: meta }),
+        el('p', { class: 'meta' }, [document.createTextNode(meta), document.createTextNode(' · 조회 ' + views.toLocaleString('ko-KR'))]),
         actions
       ]),
       shot,

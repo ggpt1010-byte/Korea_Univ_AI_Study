@@ -73,15 +73,19 @@ function projectLink(project) {
   return 'project.html?id=' + encodeURIComponent(project.id);
 }
 
-// 목록과 내 정보 화면에서 같이 쓰는 결과물 카드.
-function projectCard(p) {
+// 목록, 내 정보, 그룹 화면에서 같이 쓰는 결과물 카드. extra 는 카드 아래쪽에 덧붙일 요소.
+function projectCard(p, extra) {
   return el('article', { class: 'card' }, [
     thumbnail(p),
     el('div', { class: 'card-body' }, [
-      el('span', { class: 'tag', text: p.category || '기타' }),
+      el('div', { class: 'tag-row' }, [
+        el('span', { class: 'tag', text: p.category || '기타' }),
+        p.private ? el('span', { class: 'tag tag-private', text: '비공개' }) : null
+      ]),
       el('h2', {}, [el('a', { href: projectLink(p), text: p.title })]),
       el('p', { class: 'summary', text: p.summary }),
       el('div', { class: 'card-meta', text: p.author }),
+      extra || null,
       el('a', { class: 'btn btn-outline btn-block', href: projectLink(p), text: '자세히 보고 체험하기' })
     ])
   ]);

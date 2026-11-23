@@ -12,8 +12,27 @@ globalThis.SITE_CONFIG = {
     category: 'entry.397329402',
     url: 'entry.1675608440',
     description: 'entry.1512553475',
-    owner: 'entry.2112092626' // 계정 번호(구글 로그인한 사람만, 알아볼 수 없게 바꾼 값)
+    owner: 'entry.2112092626', // 계정 번호(구글 로그인한 사람만, 알아볼 수 없게 바꾼 값)
+    group: '',      // "그룹 번호" 질문 (단답형). 비어 있으면 그룹에 올리기와 공개 범위 고르기를 숨긴다.
+    visibility: ''  // "공개 범위" 질문 (단답형, 공개 또는 비공개)
   },
+  // 비밀번호 그룹. 결과물 폼과 다른 "그룹 폼"을 하나 더 쓴다. 셋 다 채워야 그룹 기능이 열린다.
+  // 그룹 폼 응답 시트를 "웹에 게시"한 CSV 주소
+  groupSheetCsvUrl: '',
+  // 그룹 폼의 응답 주소 (https://docs.google.com/forms/d/e/<폼 ID>/formResponse)
+  groupFormAction: '',
+  // 그룹 폼 질문별 입력 이름 (entry.숫자). 질문은 모두 단답형.
+  groupFormFields: {
+    kind: '',    // 기록 종류 (그룹 만들기, 검증, 검증 취소)
+    group: '',   // 그룹 번호
+    name: '',    // 그룹 이름
+    intro: '',   // 그룹 소개
+    pass: '',    // 비밀번호 값 (비밀번호를 알아볼 수 없게 바꾼 값)
+    target: '',  // 대상 결과물
+    voter: ''    // 누른 사람 (알아볼 수 없게 바꾼 값)
+  },
+  // 검증한 사람이 이만큼 모이면 "검증됨" 표시가 붙는다.
+  verifyGoal: 3,
   // 구글 로그인 키 (....apps.googleusercontent.com). 넣으면 오른쪽 위에 로그인과 내 정보 메뉴가 생기고,
   // 로그인한 사람의 이름이 "만든 사람" 칸에 자동으로 들어간다. 비어 있으면 로그인 없이 직접 적는다.
   googleClientId: '961375734681-0kf78dhibbk59tqaf31adjlt50lhgi1m.apps.googleusercontent.com',

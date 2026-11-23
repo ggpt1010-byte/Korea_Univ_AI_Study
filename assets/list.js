@@ -28,7 +28,7 @@
 
   loadProjects()
     .then((list) => {
-      projects = list;
+      projects = list.filter((p) => !p.private); // 비공개 결과물은 그룹 화면에서만 보여 준다.
       render();
     })
     .catch((err) => {

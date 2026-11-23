@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<title>그룹 · AI개발모임</title>
+</head>
+<body>
+<header class="site-header">
+<div class="inner">
+<a class="brand" href="index.html">
+<svg aria-hidden="true" width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#3451D1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="9" height="9" rx="2"></rect><rect x="16" y="3" width="9" height="9" rx="2"></rect><rect x="3" y="16" width="9" height="9" rx="2"></rect><path d="M20.5 16v9M16 20.5h9"></path></svg>
+AI개발모임
+</a>
+<nav class="site-nav" aria-label="주요 메뉴">
+<a class="nav-link" href="index.html">결과물 둘러보기</a>
+<a class="nav-link" href="groups.html" aria-current="page">그룹</a>
+<a class="nav-link" href="estimate.html">게임 수익 평가</a>
+<a class="btn btn-primary" href="submit.html">내 결과물 올리기</a>
+</nav>
+<div class="account" id="account"></div>
+</div>
+</header>
+<main class="page-narrow">
+
+<section class="page-head">
+<h1>그룹</h1>
+<p>AI를 좋아하는 사람들끼리 그룹을 만들어 결과물을 나누고, 괜찮은 결과물은 서로 검증해 주세요. 그룹은 비밀번호를 아는 사람만 들어갈 수 있어요.</p>
+</section>
+
+<div class="notice notice-warn" role="note">
+<p><strong>꼭 읽어 주세요.</strong> 이 사이트에는 서버가 없어서 그룹 비밀번호는 가벼운 잠금 장치예요. 비밀번호 원문은 어디에도 저장하지 않지만, 그룹 기록과 결과물은 공개 구글 시트와 공개 저장소에 남아요. 비공개 결과물도 마음먹고 찾으면 누구나 볼 수 있으니, 정말 숨겨야 하는 내용이나 다른 곳에서 쓰는 비밀번호는 넣지 마세요.</p>
+</div>
+
+<div class="notice" id="closed" hidden>
+<p>그룹 기능은 곧 열려요. 준비가 끝나면 여기에서 그룹을 만들고 들어갈 수 있어요.</p>
+</div>
+
+<div class="stack" id="open" hidden>
+<section class="stack-sm" aria-labelledby="mine-title">
+<h2 class="section-title" id="mine-title">내 그룹</h2>
+<div class="group-list" id="mine"></div>
+</section>
+
+<form class="form" id="enter-form" novalidate aria-labelledby="enter-title">
+<h2 class="section-title" id="enter-title">그룹 들어가기</h2>
+<div class="field">
+<label for="e-group">그룹</label>
+<select id="e-group" name="group"></select>
+</div>
+<div class="field">
+<label for="e-pass">비밀번호</label>
+<input id="e-pass" name="pass" type="password" autocomplete="current-password" maxlength="100">
+</div>
+<p class="form-error" id="enter-error" role="alert" hidden></p>
+<div class="form-actions">
+<button class="btn btn-primary" id="enter-send" type="submit">들어가기</button>
+</div>
+</form>
+
+<form class="form" id="make-form" novalidate aria-labelledby="make-title">
+<h2 class="section-title" id="make-title">새 그룹 만들기</h2>
+<div class="field">
+<label for="m-name">그룹 이름 *</label>
+<input id="m-name" name="name" type="text" maxlength="40" placeholder="예: 게임 만드는 사람들">
+</div>
+<div class="field">
+<label for="m-intro">그룹 소개</label>
+<input id="m-intro" name="intro" type="text" maxlength="200" placeholder="어떤 사람들이 모이는 그룹인지 한 문장으로 적어 주세요">
+</div>
+<div class="field-row">
+<div class="field">
+<label for="m-pass">비밀번호 *</label>
+<input id="m-pass" name="pass" type="password" autocomplete="new-password" maxlength="100" aria-describedby="m-pass-hint">
+</div>
+<div class="field">
+<label for="m-pass2">비밀번호 한 번 더 *</label>
+<input id="m-pass2" name="pass2" type="password" autocomplete="new-password" maxlength="100">
+</div>
+</div>
+<p class="hint" id="m-pass-hint">6자 이상으로 정해 주세요. 그룹 멤버에게는 비밀번호를 직접 알려 주세요. 비밀번호는 나중에 바꿀 수 없어요.</p>
+<p class="form-error" id="make-error" role="alert" hidden></p>
+<div class="form-actions">
+<button class="btn btn-primary" id="make-send" type="submit">그룹 만들기</button>
+</div>
+</form>
+</div>
+
+</main>
+</main>
+<footer class="site-footer"><div class="inner">AI개발모임 · 모임원들의 결과물 공유 공간 · <a href="privacy.html">개인정보 안내</a></div></footer>
+<script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
+<script src="assets/sheet.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/groups.js"></script>
+<script src="assets/groups-page.js"></script>
+</body>
+</html>

@@ -44,6 +44,39 @@
     loginBox.hidden = true;
   }
 
+  // 그룹과 공개 범위. 결과물 폼에 두 질문이 있고 그룹 기능이 켜져 있을 때만 보여 준다.
+  const G = globalThis.Groups;
+  const groupBox = document.getElementById('group-box');
+  const groupReady = Boolean(G && G.enabled && fields.group && fields.visibility);
+  function syncVisibility() {
+    const hasGroup = Boolean(form.elements.group.value);
+    form.querySelectorAll('input[name="visibility"]').forEach((r) => {
+      r.disabled = !hasGroup && r.value === '비공개';
+      if (!hasGroup && r.value === '공개') r.checked = true;
+    });
+  }
+  if (groupReady) {
+    G.load().catch(() => null).then((data) => {
+      const mine = G.myGroups(data);
+      const select = form.elements.group;
+      select.replaceChildren(
+        el('option', { value: '', text: '그룹 없이 올리기' }),
+        ...mine.map((g) => el('option', { value: g.id, text: g.name }))
+      );
+      const wanted = new URLSearchParams(location.search).get('group');
+      if (wanted && mine.some((g) => g.id === wanted)) select.value = wanted;
+      groupBox.hidden = false;
+      syncVisibility();
+    });
+    form.elements.group.addEventListener('change', syncVisibility);
+  }
+
+  function el(tag, attrs) {
+    const node = document.createElement(tag);
+    Object.entries(attrs || {}).forEach(([k, v]) => { if (k === 'text') node.textContent = v; else node.setAttribute(k, v); });
+    return node;
+  }
+
   function fail(message, input) {
     error.textContent = message;
     error.hidden = false;
@@ -69,6 +102,10 @@
     names.forEach((n) => body.append(fields[n], data[n]));
     const me = account && account.current();
     if (me && fields.owner) body.append(fields.owner, me.owner);
+    if (groupReady && form.elements.group.value) {
+      body.append(fields.group, form.elements.group.value);
+      body.append(fields.visibility, form.querySelector('input[name="visibility"]:checked').value);
+    }
 
     send.disabled = true;
     send.textContent = '보내는 중';
@@ -89,6 +126,7 @@
 
   document.getElementById('again').addEventListener('click', () => {
     form.reset();
+    if (groupReady) syncVisibility();
     done.hidden = true;
     open.hidden = false;
     form.elements.title.focus();

@@ -44,25 +44,54 @@
     return Boolean(me && p.owner && me.owner === p.owner && /^s[0-9a-f]{8}$/.test(String(p.id)));
   }
 
-  // 버전 기록: 최신 버전이 위. 지난 버전의 예상 가치도 함께 보여 준다.
+  // 평가 한 건: 누가(매니저/AI), 언제, 금액 두 개, 코멘트와 개선점.
+  function evalItem(ev) {
+    const who = M.isSiteManager(ev.by, data) ? '사이트 매니저' : '방장';
+    const when = ev.at ? new Date(ev.at).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+    return el('div', { class: 'eval-item' }, [
+      el('div', { class: 'eval-top' }, [
+        el('span', { class: 'tag ' + (ev.kind === 'AI 평가' ? 'tag-ai' : 'tag-final'), text: ev.kind === 'AI 평가' ? 'AI 평가' : '매니저 확정' }),
+        el('span', { class: 'hint', text: [who, when].filter(Boolean).join(' · ') })
+      ]),
+      el('p', {}, [el('strong', { text: M.won(ev.value) }), document.createTextNode(' · 개선 시 '), el('strong', { text: M.won(ev.improved) })]),
+      ev.memo ? el('p', { class: 'value-memo', text: ev.memo }) : null
+    ]);
+  }
+
+  // 버전별 평가 기록: 최신 버전이 위. 버전마다 마지막 평가를 펼쳐 두고, 이전 평가는 접어 둔다.
   function versionSection(p) {
-    const items = p.versions.slice().reverse().map((v) => {
-      const val = M ? M.valueOf(Object.assign({}, p, { valueId: v.id }), data) : { state: 'requested' };
+    const versions = Array.isArray(p.versions) && p.versions.length ? p.versions : [{ v: 1, id: String(p.valueId || p.id), url: p.url, changes: '', createdAt: p.createdAt }];
+    const many = versions.length > 1;
+    const items = versions.slice().reverse().map((v) => {
+      const list = M ? M.history(p, data, v.id) : [];
       const url = safeUrl(v.url);
+      const val = M ? M.valueOf(Object.assign({}, p, { valueId: v.id }), data) : { state: 'requested' };
+      const evals = list.length
+        ? [evalItem(list[0])].concat(list.length > 1 ? [el('details', { class: 'eval-older' }, [
+            el('summary', { text: '이전 평가 ' + (list.length - 1) + '개 보기' })
+          ].concat(list.slice(1).map(evalItem)))] : [])
+        : [el('p', { class: 'hint', text: val.state === 'analyzing' ? '분석 중이에요.' : '아직 평가가 없어요.' })];
       return el('li', { class: 'version-item' }, [
         el('div', { class: 'version-top' }, [
-          el('strong', { text: 'v' + v.v + (v.v === p.version ? ' (지금 버전)' : '') }),
-          el('span', { class: 'hint', text: formatDate(v.createdAt) })
+          el('strong', { text: many ? 'v' + v.v + (v.v === p.version ? ' (지금 버전)' : '') : '평가 기록' }),
+          el('span', { class: 'hint' }, [
+            document.createTextNode(formatDate(v.createdAt)),
+            many && url ? document.createTextNode(' · ') : null,
+            many && url ? el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: '이 버전 체험 링크' }) : null
+          ].filter(Boolean))
         ]),
-        v.changes ? el('p', { text: v.changes }) : (v.v === 1 ? el('p', { text: '처음 올린 버전이에요.' }) : null),
-        el('p', { class: 'hint' }, [
-          document.createTextNode(val.state === 'done' ? 'v' + v.v + ' 평가: ' + M.won(val.value) + ' · 개선 시 ' + M.won(val.improved) : 'v' + v.v + ' 평가: ' + (val.state === 'analyzing' ? '분석 중' : '아직 없음')),
-          url ? document.createTextNode(' · ') : null,
-          url ? el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: '이 버전 체험 링크' }) : null
-        ].filter(Boolean))
-      ]);
+        many ? (v.changes ? el('p', { text: v.changes }) : (v.v === 1 ? el('p', { text: '처음 올린 버전이에요.' }) : null)) : null
+      ].concat(evals));
     });
-    return section('버전 기록', el('ol', { class: 'version-list' }, items));
+    return el('section', { class: 'panel', id: 'history' }, [
+      el('h2', { text: many ? '버전별 평가 기록' : '평가 기록' }),
+      el('ol', { class: 'version-list' }, items)
+    ]);
+  }
+  // 평가를 새로 남긴 뒤 기록 칸을 다시 그린다.
+  function refreshHistory(p) {
+    const old = root.querySelector('#history');
+    if (old) old.replaceWith(versionSection(p));
   }
 
   let views = 0;
@@ -80,7 +109,7 @@
         : el('span', { class: 'meta', text: '체험 링크가 올바르지 않아요.' }),
       el('a', { class: 'btn btn-plain btn-lg', href: '#feedback', text: '피드백 남기기' }),
       likeButton(p, data, 'btn btn-plain btn-lg', true),
-      isOwner(p) && ((globalThis.SITE_CONFIG || {}).formFields || {}).parent ? el('a', { class: 'btn btn-plain btn-lg', href: 'submit.html?parent=' + encodeURIComponent(p.id), text: '새 버전 올리기' }) : null
+      isOwner(p) && globalThis.DB && DB.enabled ? el('a', { class: 'btn btn-plain btn-lg', href: 'submit.html?parent=' + encodeURIComponent(p.id), text: '새 버전 올리기' }) : null
     ]);
 
     const panel = el('div', { class: 'panel' });
@@ -92,7 +121,6 @@
       panel.append(section('만드는 데 쓴 것', el('div', { class: 'tools' }, p.tools.map((t) => el('span', { text: t })))));
     }
 
-    if (Array.isArray(p.versions) && p.versions.length > 1) panel.append(versionSection(p));
     const shot = thumbnail(p, 'thumb-lg');
     const valueBox = el('section', { class: 'value-section', id: 'value', 'aria-labelledby': 'value-title' });
     drawValue(valueBox, p);
@@ -112,6 +140,7 @@
       shot,
       panel.childNodes.length ? panel : null,
       valueBox,
+      versionSection(p),
       feedbackSection(p)
     );
   }
@@ -122,6 +151,7 @@
     const head = el('div', { class: 'value-head' }, [el('h2', { id: 'value-title', text: '예상 가치' })]);
     const body = [];
     if (v.state === 'done') {
+      if (v.source === 'ai') head.append(el('span', { class: 'value-state', text: 'AI 평가 · 매니저 확인 전' }));
       body.push(el('div', { class: 'stat-grid' }, [
         el('div', { class: 'stat' }, [el('span', { class: 'stat-label', text: '평가 금액' }), el('span', { class: 'stat-value', text: M.won(v.value) })]),
         el('div', { class: 'stat' }, [el('span', { class: 'stat-label', text: '개선 시 예상 금액' }), el('span', { class: 'stat-value', text: M.won(v.improved) })])
@@ -129,12 +159,19 @@
       if (v.memo) body.push(el('p', { class: 'value-memo', text: v.memo }));
       const who = M.isSiteManager(v.by, data) ? '사이트 매니저' : '방장';
       const when = v.at ? new Date(v.at).toLocaleDateString('ko-KR') + '에 ' : '';
-      body.push(el('p', { class: 'hint', text: who + '가 ' + when + '달았어요.' + (v.reanalyzing ? ' 지금 다시 분석하고 있어요.' : '') + ' AI 추정이 섞인 값이라 실제와 크게 다를 수 있어요.' }));
+      body.push(el('p', { class: 'hint', text: (v.source === 'ai' ? who + '가 ' + when + 'AI로 분석한 평가예요.' : who + '가 ' + when + '달았어요.') + (v.reanalyzing ? ' 지금 다시 분석하고 있어요.' : '') + ' AI 추정이 섞인 값이라 실제와 크게 다를 수 있어요.' }));
+      // 매니저가 금액을 고쳤으면 AI가 처음 낸 평가도 함께 보여 준다.
+      if (v.source === 'manager' && v.ai && (v.ai.value !== v.value || v.ai.improved !== v.improved || v.ai.memo !== v.memo)) {
+        body.push(el('details', { class: 'ai-eval' }, [
+          el('summary', { text: 'AI가 낸 평가 보기: ' + M.won(v.ai.value) + ' · 개선 시 ' + M.won(v.ai.improved) }),
+          v.ai.memo ? el('p', { class: 'value-memo', text: v.ai.memo }) : null
+        ]));
+      }
     } else {
       head.append(el('span', { class: 'value-state' + (v.state === 'analyzing' ? ' is-busy' : ''), text: v.state === 'analyzing' ? '분석 중' : '요청 중' }));
       body.push(el('p', { class: 'hint', text: v.state === 'analyzing'
         ? '매니저가 AI로 분석하고 있어요. 끝나면 평가 금액과 개선 시 예상 금액이 여기에 나와요.'
-        : (p.version > 1 ? '새 버전(v' + p.version + ')이 나와서 새로 평가를 기다리고 있어요. 지난 버전의 평가는 위 버전 기록에서 볼 수 있어요.' : '매니저가 AI로 분석해서 평가 금액과 개선 시 예상 금액을 달아 드릴 거예요.') }));
+        : (p.version > 1 ? '새 버전(v' + p.version + ')이 나와서 새로 평가를 기다리고 있어요. 지난 버전의 평가는 아래 버전별 평가 기록에서 볼 수 있어요.' : '매니저가 AI로 분석해서 평가 금액과 개선 시 예상 금액을 달아 드릴 거예요.') }));
     }
     const tools = M && M.active(p, data) ? managerTools(box, p, v) : null;
     box.replaceChildren(el('div', { class: 'panel value-panel' }, [head].concat(body)), tools);
@@ -171,7 +208,19 @@
         valueIn.value = r.value;
         improvedIn.value = r.improved;
         memoIn.value = r.memo;
-        status.textContent = 'AI가 채운 내용을 확인하고, 필요하면 고친 뒤 "이 금액으로 달기"를 눌러 주세요.';
+        // AI가 낸 평가는 매니저가 고치기 전 그대로 "AI 평가"로 남긴다.
+        try {
+          await M.send('AI 평가', p, { value: r.value, improved: r.improved, memo: r.memo });
+          const me = globalThis.Account.current();
+          M.addLocal(data, { kind: 'AI 평가', target: String(p.valueId || p.id), by: me.owner, value: r.value, improved: r.improved, memo: r.memo });
+          refreshHistory(p);
+          drawValue(box, p);
+          const note = box.querySelector('.manager-box [aria-live]');
+          if (note) note.textContent = 'AI 평가를 남겼어요. 매니저 최종 금액으로 확정하려면 확인하고, 필요하면 고친 뒤 "이 금액으로 달기"를 눌러 주세요.';
+          return;
+        } catch (saveErr) {
+          status.textContent = 'AI 평가를 저장하지 못했어요(' + saveErr.message + '). 내용을 확인하고 "이 금액으로 달기"를 눌러 주세요.';
+        }
         valueIn.focus();
       } catch (err) {
         M.send('분석 취소', p).catch(() => {});
@@ -199,6 +248,7 @@
         const me = globalThis.Account.current();
         M.addLocal(data, { kind: '가치 평가', target: String(p.valueId || p.id), by: me.owner, value: Math.round(value), improved: Math.round(improved), memo: ev.memo });
         drawValue(box, p);
+        refreshHistory(p);
         const note = box.querySelector('.value-panel .hint');
         if (note) note.textContent = '금액을 달았어요.';
       } catch (err) {

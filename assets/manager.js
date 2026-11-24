@@ -47,29 +47,46 @@
   }
 
   // 결과물 하나의 평가 상태. 매니저 기록만 순서대로 따라가서 마지막 상태를 고른다.
-  // state: 'requested'(요청 중), 'analyzing'(분석 중), 'done'(평가 완료)
+  // state: 'requested'(요청 중), 'analyzing'(분석 중), 'done'(평가 있음)
+  // source: 'manager'(매니저가 확인하고 단 최종 금액) 또는 'ai'(AI 평가만 있고 매니저 확인 전)
+  // ai: 이 버전의 마지막 AI 평가(매니저가 금액을 고쳤어도 AI가 처음 낸 값이 남는다)
   function valueOf(p, data) {
     var out = { state: 'requested' };
+    var ai = null;
+    var final = null;
     if (!p || !data || !Array.isArray(data.valueEvents)) return out;
     data.valueEvents.forEach(function (ev) {
       if (ev.target !== String(p.valueId || p.id) || !canValue(ev.by, p, data)) return;
-      if (ev.kind === '가치 평가') {
-        out = { state: 'done', value: ev.value, improved: ev.improved, memo: ev.memo, by: ev.by, at: ev.at };
+      if (ev.kind === '가치 평가' || ev.kind === 'AI 평가') {
+        var rec = { value: ev.value, improved: ev.improved, memo: ev.memo, by: ev.by, at: ev.at };
+        if (ev.kind === 'AI 평가') ai = rec; else final = rec;
+        var base = final || ai;
+        out = Object.assign({ state: 'done', source: final ? 'manager' : 'ai' }, base);
       } else if (ev.kind === '분석 시작') {
         if (out.state !== 'done' && (!ev.at || Date.now() - ev.at < ANALYZE_TIMEOUT)) out = { state: 'analyzing', by: ev.by, at: ev.at };
         else if (out.state === 'done') out.reanalyzing = !ev.at || Date.now() - ev.at < ANALYZE_TIMEOUT;
       } else if (ev.kind === '분석 취소') {
-        if (out.state === 'analyzing') out = { state: 'requested' };
+        if (out.state === 'analyzing') out = final || ai ? Object.assign({ state: 'done', source: final ? 'manager' : 'ai' }, final || ai) : { state: 'requested' };
         else if (out.state === 'done') out.reanalyzing = false;
       }
     });
+    out.ai = ai;
     return out;
+  }
+
+  // 한 버전(valueId)에 남은 평가 기록 전부. 최신이 앞. kind 는 '가치 평가'(매니저) 또는 'AI 평가'.
+  function history(p, data, valueId) {
+    if (!p || !data || !Array.isArray(data.valueEvents)) return [];
+    var target = String(valueId || p.valueId || p.id);
+    return data.valueEvents.filter(function (ev) {
+      return ev.target === target && (ev.kind === '가치 평가' || ev.kind === 'AI 평가') && canValue(ev.by, p, data);
+    }).slice().reverse();
   }
 
   // 방금 보낸 기록을 다시 불러오지 않고도 이 화면에서 바로 보이게 덧붙인다.
   function addLocal(data, ev) {
     if (!data) return;
-    data.valueEvents = (data.valueEvents || []).concat([Object.assign({ at: Date.now(), row: 1e9 }, ev)]);
+    data.valueEvents = (data.valueEvents || []).concat([Object.assign({ at: Date.now() }, ev)]);
   }
 
   function send(kind, p, extra) {
@@ -182,6 +199,7 @@
     storedKey: storedKey,
     storeKey: storeKey,
     valueOf: valueOf,
+    history: history,
     addLocal: addLocal,
     send: send,
     analyze: analyze,

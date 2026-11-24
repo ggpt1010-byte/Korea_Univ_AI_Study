@@ -10,6 +10,7 @@
 - `assets/config.js` Supabase 주소와 공개 키, 구글 로그인, 피드백 설정을 모아 둔 곳
 - `assets/db.js` Supabase 연결, `assets/vendor/supabase-2.99.3.js` Supabase 라이브러리(그대로 복사해 둔 것)
 - `supabase/schema.sql` 데이터베이스 표, 읽기 규칙(RLS), 서버 함수. Supabase SQL Editor에서 실행
+- 모든 HTML은 `assets/` 파일을 `?v=날짜`를 붙여 불러요. GitHub Pages는 파일을 10분쯤 브라우저에 저장해 두기 때문에, 여러 파일을 함께 바꾼 뒤에는 이 값을 새 날짜로 바꿔야 옛 파일과 새 파일이 섞여 화면이 비는 일이 없어요.
 - `data/projects.json` 직접 넣어 둔 결과물 (지금은 예시)
 - `shots/` 공개 결과물 체험 링크의 첫 화면 이미지 (자동으로 갱신)
 - `scripts/capture.mjs` 첫 화면을 찍는 스크립트

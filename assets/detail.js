@@ -127,7 +127,7 @@
         el('div', { class: 'stat' }, [el('span', { class: 'stat-label', text: '개선 시 예상 금액' }), el('span', { class: 'stat-value', text: M.won(v.improved) })])
       ]));
       if (v.memo) body.push(el('p', { class: 'value-memo', text: v.memo }));
-      const who = M.isSiteManager(v.by) ? '사이트 매니저' : '방장';
+      const who = M.isSiteManager(v.by, data) ? '사이트 매니저' : '방장';
       const when = v.at ? new Date(v.at).toLocaleDateString('ko-KR') + '에 ' : '';
       body.push(el('p', { class: 'hint', text: who + '가 ' + when + '달았어요.' + (v.reanalyzing ? ' 지금 다시 분석하고 있어요.' : '') + ' AI 추정이 섞인 값이라 실제와 크게 다를 수 있어요.' }));
     } else {
@@ -200,7 +200,7 @@
         M.addLocal(data, { kind: '가치 평가', target: String(p.valueId || p.id), by: me.owner, value: Math.round(value), improved: Math.round(improved), memo: ev.memo });
         drawValue(box, p);
         const note = box.querySelector('.value-panel .hint');
-        if (note) note.textContent = '금액을 달았어요. 다른 사람에게는 몇 분 뒤에 보여요.';
+        if (note) note.textContent = '금액을 달았어요.';
       } catch (err) {
         save.disabled = false;
         save.textContent = '이 금액으로 달기';
@@ -226,7 +226,7 @@
   }
 
   if (!id) { notFound('어떤 결과물인지 알 수 없어요.'); return; }
-  // 비공개 결과물은 그 그룹에 들어간 사람에게만 보여 준다. (공개 시트에는 남아 있어서 완전히 숨겨지지는 않는다.)
+  // 비공개 결과물은 서버가 그 그룹 멤버(와 올린 사람)에게만 내려 준다. 여기까지 왔으면 볼 수 있는 사람이다.
   function locked(p) {
     root.replaceChildren(
       el('div', { class: 'empty' }, [
@@ -236,17 +236,13 @@
     );
   }
 
-  function canSee(p) {
-    if (!p.private) return true;
-    const G = globalThis.Groups;
-    return Boolean(G && G.isMember(p.group, data));
-  }
+  function canSee(p) { return Boolean(p); }
 
   loadBoard()
     .then((board) => {
       data = board.data;
       const p = board.projects.find((item) => String(item.id) === id);
-      if (!p) { notFound('찾는 결과물이 없어요. 삭제되었거나 주소가 잘못되었을 수 있어요.'); return; }
+      if (!p) { notFound('찾는 결과물이 없어요. 비공개 결과물이라면 구글로 로그인하고 그 방에 들어간 뒤 다시 열어 주세요. 삭제되었거나 주소가 잘못되었을 수도 있어요.'); return; }
       if (canSee(p)) render(p); else locked(p);
     })
     .catch((err) => notFound(err.message));

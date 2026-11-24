@@ -1,8 +1,7 @@
 // 로그인과 "내 정보" 메뉴. 모든 화면 오른쪽 위에 붙는다.
-// 서버가 없는 사이트라서 구글 로그인 결과를 이 브라우저 안에서만 쓴다.
-// - 가져오는 것: 이름, 그리고 구글 계정 번호를 알아볼 수 없게 바꾼 값(아래 ownerOf).
-// - 이메일 주소와 프로필 사진은 쓰지도, 저장하지도, 보내지도 않는다.
-// - 서버에서 다시 확인하지 않으므로 본인 확인 기능은 아니다. "내 결과물 모아 보기" 용도로만 쓴다.
+// 구글 로그인 결과(ID 토큰)를 Supabase 로그인으로 넘긴다. 서버는 이 토큰을 구글에 확인하고 계정을 만든다.
+// - 화면에 쓰는 것: 이름, 그리고 구글 계정 번호를 알아볼 수 없게 바꾼 값(아래 ownerOf, 서버도 같은 값을 계산한다).
+// - 이메일 주소는 Supabase 로그인 기록에만 남고, 사이트 화면이나 공개 목록에는 쓰지 않는다.
 (function () {
   var config = globalThis.SITE_CONFIG || {};
   var KEY = 'korai-account';
@@ -43,7 +42,7 @@
   }
 
   // 구글 계정 번호(sub)를 SHA-256으로 바꾼 앞 16자리. 같은 계정이면 늘 같은 값이 나오고,
-  // 이 값으로는 원래 계정을 알아낼 수 없다. 시트에 공개되므로 이메일 같은 정보는 섞지 않는다.
+  // 이 값으로는 원래 계정을 알아낼 수 없다. 공개 목록에 쓰이므로 이메일 같은 정보는 섞지 않는다.
   function ownerOf(sub) {
     var data = new TextEncoder().encode('korai-account:' + sub);
     return crypto.subtle.digest('SHA-256', data).then(function (buf) {
@@ -52,11 +51,43 @@
     });
   }
 
+  var DB = globalThis.DB || { enabled: false };
+
   function handleCredential(response) {
-    var p = decode(response && response.credential);
+    var token = response && response.credential;
+    var p = decode(token);
     if (!p || !p.sub) return;
     var name = String(p.name || p.given_name || '').trim().slice(0, 40) || '모임원';
-    ownerOf(String(p.sub)).then(function (owner) { save({ name: name, owner: owner }); });
+    var signIn = DB.enabled
+      ? DB.client.auth.signInWithIdToken({ provider: 'google', token: token }).then(function (res) {
+        if (res.error) throw res.error;
+      })
+      : Promise.resolve();
+    signIn
+      .then(function () { return ownerOf(String(p.sub)); })
+      .then(function (owner) { save({ name: name, owner: owner }); })
+      .catch(function () { alertBox('로그인하지 못했어요. 잠시 뒤에 다시 해 주세요.'); });
+  }
+
+  // 로그인 실패 안내. 브라우저 기본 알림 창 대신 화면 아래에 잠깐 띄운다.
+  function alertBox(text) {
+    var n = document.createElement('div');
+    n.className = 'toast';
+    n.setAttribute('role', 'alert');
+    n.textContent = text;
+    document.body.append(n);
+    setTimeout(function () { n.remove(); }, 6000);
+  }
+
+  // 서버 로그인이 끝났거나 만료됐으면 화면의 로그인 표시도 지운다.
+  if (enabled && DB.enabled) {
+    DB.client.auth.getSession().then(function (res) {
+      var session = res && res.data && res.data.session;
+      if (!session && current) save(null);
+    });
+    DB.client.auth.onAuthStateChange(function (event) {
+      if (event === 'SIGNED_OUT' && current) save(null);
+    });
   }
 
   function loadGsi() {
@@ -97,6 +128,7 @@
 
   function signOut() {
     if (globalThis.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+    if (DB.enabled) DB.client.auth.signOut().catch(function () {});
     save(null);
   }
 
@@ -174,7 +206,7 @@
       pop = make('div', 'account-pop');
       pop.append(
         make('p', 'pop-name', '구글로 로그인'),
-        make('p', '', '로그인하고 올리면 내 결과물을 내 정보 화면에서 모아 볼 수 있어요. 이름만 가져오고, 이메일 주소는 저장하지 않아요.'),
+        make('p', '', '로그인하면 그룹(방)에 들어가고, 올린 결과물을 내 정보 화면에서 모아 볼 수 있어요. 화면에는 이름만 써요.'),
         make('div', 'pop-google')
       );
       var more = make('a', 'pop-more', '어떤 정보를 쓰는지 보기');

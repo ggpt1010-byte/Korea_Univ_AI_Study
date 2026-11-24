@@ -24,7 +24,7 @@ function boardStats(p, data) {
     likes: G && G.likersFor ? G.likersFor(data, String(p.id)).length : 0,
     views: G && G.viewsFor ? G.viewsFor(data, String(p.id)) : 0,
     price: v.state === 'done' ? Number(v.value) || 0 : -1, // 아직 평가 전이면 맨 뒤로
-    when: String(p.updatedAt || p.createdAt || '') + '#' + String(p.row || 0).padStart(6, '0')
+    when: String(p.updatedAt || p.createdAt || '') + '#' + String(p.row || 0).padStart(12, '0')
   };
 }
 

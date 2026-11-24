@@ -1,8 +1,8 @@
 (function () {
   const config = globalThis.SITE_CONFIG || {};
-  const fields = config.formFields || {};
-  const names = ['title', 'summary', 'author', 'category', 'url', 'description'];
-  const ready = Boolean(config.formAction) && names.every((n) => fields[n]);
+    const names = ['title', 'summary', 'author', 'category', 'url', 'description'];
+  const DB = globalThis.DB;
+  const ready = Boolean(DB && DB.enabled);
 
   const closed = document.getElementById('closed');
   const open = document.getElementById('open');
@@ -15,8 +15,7 @@
   open.hidden = false;
 
   // 구글 로그인(오른쪽 위 메뉴와 같은 로그인): 이름을 "만든 사람" 칸에 넣고,
-  // 등록할 때 계정 번호(알아볼 수 없게 바꾼 값)를 함께 보내 내 정보 화면에 모아 보이게 한다.
-  // 본인 확인 기능은 아니다. 이메일 주소는 쓰지도 보내지도 않는다.
+  // 서버가 로그인한 계정으로 결과물 주인을 기록해 내 정보 화면에 모아 보이게 한다.
   const account = globalThis.Account;
   const loginBox = document.getElementById('login-box');
   const loginText = document.getElementById('login-text');
@@ -47,7 +46,7 @@
   // 새 버전 올리기: submit.html?parent=<결과물 번호>. 같은 구글 계정으로 로그인한 원래 작성자만 올릴 수 있다.
   const parentId = new URLSearchParams(location.search).get('parent') || '';
   let parent = null;
-  const versionReady = Boolean(fields.parent && fields.changes);
+  const versionReady = ready;
   if (parentId && versionReady) {
     document.getElementById('submit-title').textContent = '새 버전 올리기';
     document.title = '새 버전 올리기 · AI개발모임';
@@ -70,7 +69,7 @@
 
   // 사진 주소. 결과물 폼에 "사진 주소" 질문이 있을 때만 보여 준다.
   const imagesBox = document.getElementById('images-box');
-  if (fields.images) imagesBox.hidden = false;
+  imagesBox.hidden = false;
   function imageUrls() {
     return form.elements.images.value.split(/[\s,]+/).map((v) => v.trim()).filter(Boolean);
   }
@@ -78,7 +77,7 @@
   // 그룹과 공개 범위. 결과물 폼에 두 질문이 있고 그룹 기능이 켜져 있을 때만 보여 준다.
   const G = globalThis.Groups;
   const groupBox = document.getElementById('group-box');
-  const groupReady = Boolean(G && G.enabled && fields.group && fields.visibility);
+  const groupReady = Boolean(G && G.enabled);
   function syncVisibility() {
     const hasGroup = Boolean(form.elements.group.value);
     form.querySelectorAll('input[name="visibility"]').forEach((r) => {
@@ -134,35 +133,33 @@
       if (!me0 || me0.owner !== parent.owner) return fail('새 버전은 처음 올린 사람이 같은 구글 계정으로 로그인해야 올릴 수 있어요.');
       if (!form.elements.changes.value.trim()) return fail('바뀐 점을 적어 주세요.', form.elements.changes);
     }
-    const images = fields.images ? imageUrls() : [];
+    const images = imageUrls();
     if (images.length > 5) return fail('사진 주소는 5개까지 넣을 수 있어요.', form.elements.images);
     if (images.some((u) => !/^https:\/\//.test(u) || !isWebUrl(u))) return fail('사진 주소는 https:// 로 시작하는 주소로 한 줄에 하나씩 적어 주세요.', form.elements.images);
 
-    const body = new URLSearchParams();
-    names.forEach((n) => body.append(fields[n], data[n]));
     const me = account && account.current();
-    if (me && fields.owner) body.append(fields.owner, me.owner);
-    if (images.length) body.append(fields.images, images.join('\n'));
+    const payload = Object.assign({}, data, { images: images });
     if (parentId && parent) {
-      body.append(fields.parent, String(parent.id));
-      body.append(fields.changes, form.elements.changes.value.trim().slice(0, 1000));
+      payload.parent = String(parent.id);
+      payload.changes = form.elements.changes.value.trim().slice(0, 1000);
     }
     if (groupReady && form.elements.group.value) {
-      body.append(fields.group, form.elements.group.value);
-      body.append(fields.visibility, form.querySelector('input[name="visibility"]:checked').value);
+      payload.group = form.elements.group.value;
+      payload.private = form.querySelector('input[name="visibility"]:checked').value === '비공개';
     }
 
     send.disabled = true;
     send.textContent = '보내는 중';
     try {
-      // 구글 폼은 다른 사이트에서 보낸 요청의 결과를 알려 주지 않는다. 요청이 나갔으면 접수된 것으로 본다.
-      await fetch(config.formAction, { method: 'POST', mode: 'no-cors', body: body });
+      const newId = await DB.call('submit_project', { p: payload });
       open.hidden = true;
       done.hidden = false;
-      doneMine.hidden = !(me && fields.owner);
+      doneMine.hidden = !me;
+      const view = document.getElementById('done-view');
+      if (view) view.href = 'project.html?id=' + encodeURIComponent(parent ? parent.id : newId);
       document.getElementById('done-title').focus();
     } catch (err) {
-      fail('보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.');
+      fail(err.message || '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.');
     } finally {
       send.disabled = false;
       send.textContent = '등록하기';

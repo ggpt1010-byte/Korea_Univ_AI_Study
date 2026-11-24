@@ -14,7 +14,8 @@ async function fetchJson(path) {
 async function loadSubmitted() {
   const DB = globalThis.DB;
   if (!DB || !DB.enabled) return [];
-  const rows = await DB.select('projects', 'id,title,summary,author,category,url,description,owner,group_id,is_private,images,parent,changes,created_at');
+  // '*' 로 읽는다: 협업 칸(open_source 등)은 collab.sql 을 실행한 뒤에만 있어서, 이름을 적으면 실행 전에 목록 전체가 안 뜬다.
+  const rows = await DB.select('projects', '*');
   return rows.map((r) => {
     const t = Date.parse(r.created_at) || 0;
     return {
@@ -23,6 +24,8 @@ async function loadSubmitted() {
       createdAt: t ? new Date(t + 9 * 3600 * 1000).toISOString().slice(0, 10) : '', // 한국 날짜
       owner: r.owner || '', group: r.group_id || '', private: Boolean(r.is_private),
       images: Array.isArray(r.images) ? r.images.slice(0, 5) : [], parent: r.parent || '', changes: r.changes || '',
+      openSource: Boolean(r.open_source), repoUrl: r.open_source && r.repo_url ? String(r.repo_url) : '',
+      license: r.license || '모름', seeking: Boolean(r.seeking),
       row: Math.floor(t / 1000) // 같은 날 올린 것끼리 순서를 정하는 데 쓴다.
     };
   });
@@ -143,6 +146,26 @@ function likeButton(p, data, extraClass, withLabel) {
 
 function viewCount(p, data) { const G = globalThis.Groups; return G && G.viewsFor ? G.viewsFor(data, String(p.id)) : 0; }
 
+// 오픈소스, 같이 할 사람 구함 배지. 카드와 상세 화면에서 같이 쓴다.
+ICONS.code = '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 4.5L2 8l3.5 3.5M10.5 4.5L14 8l-3.5 3.5"/></svg>';
+ICONS.hand = '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="5" r="2.2"/><circle cx="11" cy="5.5" r="1.8"/><path d="M1.8 13.5c.4-2.4 1.8-3.8 3.7-3.8s3.3 1.4 3.7 3.8M9.6 9.8c1.9-.4 3.9.6 4.6 3.2"/></svg>';
+function collabTags(p) {
+  const out = [];
+  if (p.openSource) {
+    const t = el('span', { class: 'tag tag-open' });
+    t.innerHTML = ICONS.code;
+    t.append(document.createTextNode('오픈소스'));
+    out.push(t);
+  }
+  if (p.seeking) {
+    const t = el('span', { class: 'tag tag-seeking' });
+    t.innerHTML = ICONS.hand;
+    t.append(document.createTextNode('같이 할 사람 구함'));
+    out.push(t);
+  }
+  return out;
+}
+
 function visibilityTag(p) {
   const tag = el('span', { class: 'tag ' + (p.private ? 'tag-private' : 'tag-public') });
   tag.innerHTML = p.private ? ICONS.lock : ICONS.globe;
@@ -151,11 +174,17 @@ function visibilityTag(p) {
 }
 
 // 결과물과 그룹 기록(검증, 평가 금액)을 함께 불러온다. 그룹 기록을 못 읽어도 결과물은 보여 준다.
+// 같이 개선하기 기록(아이디어, 참여, 기여자)은 data.collab 에 붙인다.
 function loadBoard() {
   const G = globalThis.Groups;
+  const C = globalThis.Collab;
   const empty = { groups: [], votes: {}, valueEvents: [], likes: {}, views: {} };
-  return Promise.all([loadProjects(), G ? G.load().catch(() => empty) : Promise.resolve(empty)])
-    .then(([projects, data]) => ({ projects: projects, data: data }));
+  const noCollab = C ? C.empty() : { ready: false, ideas: [], joins: [], counts: {}, contributors: [] };
+  return Promise.all([
+    loadProjects(),
+    G ? G.load().catch(() => empty) : Promise.resolve(empty),
+    C ? C.load().catch(() => noCollab) : Promise.resolve(noCollab)
+  ]).then(([projects, data, collab]) => { data.collab = collab; return { projects: projects, data: data }; });
 }
 
 // 카드 아래쪽의 예상 가치 줄.
@@ -197,7 +226,7 @@ function projectCard(p, extra, data) {
         el('div', { class: 'tag-row' }, [
           el('span', { class: 'tag', text: p.category || '기타' }), visibilityTag(p),
           p.version > 1 ? el('span', { class: 'tag tag-version', text: 'v' + p.version }) : null
-        ]),
+        ].concat(collabTags(p))),
         el('div', { class: 'card-when' }, [
           shortDate(p.updatedAt || p.createdAt) ? el('span', { text: shortDate(p.updatedAt || p.createdAt) }) : null,
           el('span', { text: p.author })

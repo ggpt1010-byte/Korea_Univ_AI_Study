@@ -11,6 +11,9 @@
     "owner": "",
     "group": "",
     "private": false,
+    "images": [],
+    "parent": "",
+    "changes": "",
     "row": 1
   },
   {
@@ -25,6 +28,9 @@
     "owner": "",
     "group": "",
     "private": false,
+    "images": [],
+    "parent": "",
+    "changes": "",
     "row": 2
   }
 ]

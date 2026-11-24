@@ -164,7 +164,7 @@ function valueLine(p, data) {
   const v = M ? M.valueOf(p, data) : { state: 'requested' };
   if (v.state === 'done') {
     return el('div', { class: 'card-value' }, [
-      el('span', {}, [el('span', { class: 'value-label', text: '예상 가치 ' }), el('strong', { text: M.won(v.value) })]),
+      el('span', {}, [el('span', { class: 'value-label', text: (v.source === 'ai' ? 'AI 예상 가치 ' : '예상 가치 ') }), el('strong', { text: M.won(v.value) })]),
       el('span', {}, [el('span', { class: 'value-label', text: '개선 시 예상 가치 ' }), el('strong', { text: M.won(v.improved) })])
     ]);
   }

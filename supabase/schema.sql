@@ -94,6 +94,11 @@ create table if not exists public.value_events (
   at timestamptz not null default now()
 );
 
+-- AI 평가: 매니저가 AI 분석을 돌리면 AI가 낸 금액과 코멘트를 그대로 남긴다(매니저가 단 최종 금액과 따로).
+alter table public.value_events drop constraint if exists value_events_kind_check;
+alter table public.value_events add constraint value_events_kind_check
+  check (kind in ('분석 시작', '분석 취소', '가치 평가', 'AI 평가'));
+
 create table if not exists public.managers (
   owner text primary key check (owner ~ '^g[0-9a-f]{16}$')
 );
@@ -283,10 +288,10 @@ begin
      and not exists (select 1 from public.groups where id = gid and owner = me) then
     raise exception 'not_manager';
   end if;
-  if p_kind = '가치 평가' and (p_value is null or p_improved is null) then raise exception 'missing_value'; end if;
+  if p_kind in ('가치 평가', 'AI 평가') and (p_value is null or p_improved is null) then raise exception 'missing_value'; end if;
   insert into public.value_events (kind, target, by_owner, value, improved, memo)
-  values (p_kind, p_target, me, case when p_kind = '가치 평가' then p_value end,
-          case when p_kind = '가치 평가' then p_improved end, left(coalesce(p_memo, ''), 2000));
+  values (p_kind, p_target, me, case when p_kind in ('가치 평가', 'AI 평가') then p_value end,
+          case when p_kind in ('가치 평가', 'AI 평가') then p_improved end, left(coalesce(p_memo, ''), 2000));
 end $$;
 
 -- 함수는 로그인 여부와 상관없이 부를 수 있게 하고, 확인은 함수 안에서 한다.

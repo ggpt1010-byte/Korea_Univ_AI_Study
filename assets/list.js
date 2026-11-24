@@ -1,8 +1,9 @@
-// 첫 화면: 분류 칩, 이번 주 새 결과물, 순위 목록(기본 좋아요 순).
+// 첫 화면: 맨 위 슬라이드(이번 주 새 결과물, 좋아요 Top 4, 조회수 Top 4), 바로 아래 전체 결과물(분류 칩, 기본 좋아요 순).
 (function () {
   const chipsBox = document.getElementById('chips');
   const board = document.getElementById('board');
   const count = document.getElementById('count');
+  const toolbar = document.getElementById('list-toolbar');
   let projects = [];
   let data = null;
   let selected = '전체';
@@ -26,14 +27,21 @@
     const shown = projects.filter((p) => (selected === '전체' || (p.category || '기타') === selected) &&
       toggles.every((t) => !t.on || p[t.key]));
     count.textContent = '결과물 ' + shown.length + '개';
-    if (shown.length === 0) {
-      board.replaceChildren(el('div', { class: 'empty' }, [
-        el('p', { text: projects.length === 0 ? '아직 올라온 결과물이 없어요. 첫 번째로 올려 보세요.' : (toggles.some((t) => t.on) ? '조건에 맞는 결과물이 아직 없어요.' : '이 분류에는 아직 결과물이 없어요.') }),
+    if (projects.length === 0) {
+      board.replaceChildren(toolbar, el('div', { class: 'empty' }, [
+        el('p', { text: '아직 올라온 결과물이 없어요. 첫 번째로 올려 보세요.' }),
         el('a', { class: 'btn btn-primary', href: 'submit.html', text: '내 결과물 올리기' })
       ]));
       return;
     }
-    board.replaceChildren(...boardSections({ list: shown, data: data, state: state, rerender: render, idPrefix: 'main' }));
+    // 슬라이드는 분류 칩과 상관없이 공개 결과물 전체에서 고른다. 칩은 아래 전체 결과물만 거른다.
+    board.replaceChildren(
+      highlightSection({ list: projects, data: data, state: state, idPrefix: 'main' }),
+      allSection({
+        list: shown, data: data, state: state, rerender: render, idPrefix: 'main', toolbar: toolbar,
+        emptyText: toggles.some((t) => t.on) ? '조건에 맞는 결과물이 아직 없어요.' : '이 분류에는 아직 결과물이 없어요.'
+      })
+    );
   }
 
   loadBoard()

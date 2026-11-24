@@ -155,7 +155,7 @@
       el('section', { class: 'list-section', 'aria-labelledby': 'open-title' }, [
         sectionTitle('globe', '공개 결과물', open.length, 'open-title')
       ].concat(open.length
-        ? boardSections({ list: open, data: data, state: boardState, rerender: () => room(g), extraFor: verifyBox, idPrefix: 'room', title: '나머지 공개 결과물' })
+        ? boardSections({ list: open, data: data, state: boardState, rerender: () => room(g), extraFor: verifyBox, idPrefix: 'room', title: '공개 결과물 전체' })
         : [grid(open, filter === '검증됨' ? '아직 이 방에서 검증한 공개 결과물이 없어요.' : '아직 공개 결과물이 없어요.')]))
     );
   }

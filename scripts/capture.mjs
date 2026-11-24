@@ -36,9 +36,22 @@ function isPublicWebUrl(value) {
   return true;
 }
 
+// 공개 결과물만 Supabase 에서 공개 키로 읽는다(서버 규칙상 비공개는 내려오지 않는다).
+// 비공개 결과물의 첫 화면은 공개 저장소에 올리면 안 되므로 찍지 않는다.
+async function loadPublic() {
+  await import('../assets/config.js');
+  const { supabaseUrl, supabaseKey } = globalThis.SITE_CONFIG || {};
+  if (!supabaseUrl || !supabaseKey) return [];
+  const res = await fetch(`${supabaseUrl}/rest/v1/projects?select=id,url,is_private&is_private=eq.false`, {
+    headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+  });
+  if (!res.ok) throw new Error(`결과물 목록을 읽지 못했어요 (${res.status}).`);
+  return (await res.json()).filter((p) => !p.is_private);
+}
+
 const projects = [
   ...(await readJson('data/projects.json', [])),
-  ...(await readJson('data/submissions.json', []))
+  ...(await loadPublic())
 ];
 const failed = all ? {} : await readJson(FAILED_FILE, {});
 

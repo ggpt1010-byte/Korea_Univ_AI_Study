@@ -26,10 +26,6 @@
     const list = data.groups.slice();
     const at = featured ? list.findIndex((g) => g.name === featured) : -1;
     if (at > 0) list.unshift(list.splice(at, 1)[0]);
-    const mine = G.memberships();
-    Object.keys(mine).forEach((id) => {
-      if (!list.some((g) => g.id === id) && G.isMember(id, data)) list.push({ id: id, name: mine[id].name, intro: '', pending: true });
-    });
     return list;
   }
 
@@ -49,7 +45,7 @@
         el('span', { class: 'group-num', text: '#' + (i + 1) }),
         el('span', { class: 'group-main' }, [
           el('span', { class: 'group-name', text: g.name }),
-          el('span', { class: 'hint', text: g.pending ? '방금 만든 방이에요. 다른 사람에게는 몇 분 뒤에 보여요.' : (g.intro || '') }),
+          el('span', { class: 'hint', text: g.intro || '' }),
           me && g.owner === me.owner ? el('span', { class: 'group-owner', text: '내가 방장' }) : null
         ]),
         state
@@ -82,7 +78,7 @@
   }
   if (account && account.enabled) {
     makeOpen.hidden = false;
-    account.onChange(() => { loginDrawn = false; syncLogin(); renderList(); });
+    account.onChange(() => { loginDrawn = false; syncLogin(); refresh(true); });
   }
   function toggleMake(show) {
     makeForm.hidden = !show;
@@ -106,14 +102,11 @@
     makeSend.disabled = true;
     makeSend.textContent = '만드는 중';
     try {
-      // 같은 이름의 방이 이미 있는지 시트를 새로 읽어 확인한다.
-      await refresh(true);
-      const id = SheetData.groupKey(name);
-      if (data.groups.some((g) => g.id === id)) return fail(makeError, '같은 이름의 방이 이미 있어요. 다른 이름을 적어 주세요.', f.name);
-      await G.createGroup(name, intro, f.pass.value, me.owner);
+      // 같은 이름의 방이 있는지는 서버가 확인한다.
+      const id = await G.createGroup(name, intro, f.pass.value);
       location.href = groupLink(id);
     } catch (err) {
-      fail(makeError, '방을 만들지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.');
+      fail(makeError, err.message || '방을 만들지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.', f.name);
     } finally {
       makeSend.disabled = false;
       makeSend.textContent = '방 만들기';

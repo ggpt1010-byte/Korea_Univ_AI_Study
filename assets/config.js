@@ -1,43 +1,11 @@
-// 사이트 설정. 구글 폼과 시트를 바꾸면 이 파일만 고치면 된다.
+// 사이트 설정.
 globalThis.SITE_CONFIG = {
-  // 구글 시트를 "웹에 게시"해서 받은 CSV 주소. 비어 있으면 등록된 결과물을 불러오지 않는다.
-  sheetCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQmKPd2pGDH_A4gQ2LpQopjaAYF50CE4us0tAJyy8tiz2evXk3i_mS6znWJAoW8Pt5EcK9-KRtY8Zfm/pub?gid=197632755&single=true&output=csv',
-  // 구글 폼의 응답 주소 (https://docs.google.com/forms/d/e/<폼 ID>/formResponse). 비어 있으면 등록 양식을 닫아 둔다.
-  formAction: 'https://docs.google.com/forms/d/e/1FAIpQLSfPgvQD1RAFrj3nOx_RSeDHmKpnheEo6lJCMMd7jLmeM_JfSw/formResponse',
-  // 구글 폼 질문별 입력 이름 (entry.숫자)
-  formFields: {
-    title: 'entry.2139255545',
-    summary: 'entry.912478157',
-    author: 'entry.1105255090',
-    category: 'entry.397329402',
-    url: 'entry.1675608440',
-    description: 'entry.1512553475',
-    owner: 'entry.2112092626', // 계정 번호(구글 로그인한 사람만, 알아볼 수 없게 바꾼 값)
-    group: 'entry.604167476',      // "그룹 번호" 질문 (단답형). 비어 있으면 그룹에 올리기와 공개 범위 고르기를 숨긴다.
-    visibility: 'entry.1275904896',  // "공개 범위" 질문 (단답형, 공개 또는 비공개)
-    images: 'entry.17143117',   // "사진 주소" 질문 (장문형, 한 줄에 하나). 비어 있으면 사진 주소 칸을 숨긴다.
-    parent: 'entry.646952533',    // "원래 결과물" 질문 (단답형). 새 버전일 때 처음 버전의 결과물 번호.
-    changes: 'entry.927984362'    // "바뀐 점" 질문 (장문형). 이 둘을 채워야 "새 버전 올리기"가 열린다.
-  },
-  // 비밀번호 그룹. 결과물 폼과 다른 "그룹 폼"을 하나 더 쓴다. 셋 다 채워야 그룹 기능이 열린다.
-  // 그룹 폼 응답 시트를 "웹에 게시"한 CSV 주소
-  groupSheetCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrM8SpnQCGcm0iAbmbEJjvv5tpapldrxN3DUaRQPSuAg-Rlke7lGXdkhKm-J3NLRSobcTGEqIKgJvu/pub?gid=1592204593&single=true&output=csv',
-  // 그룹 폼의 응답 주소 (https://docs.google.com/forms/d/e/<폼 ID>/formResponse)
-  groupFormAction: 'https://docs.google.com/forms/d/e/1FAIpQLSdZ5FtcFwDLDfsL9IQ9JulLaRK5ZgzJJLdANHivQiCkbxe9Ag/formResponse',
-  // 그룹 폼 질문별 입력 이름 (entry.숫자). 질문은 모두 단답형.
-  groupFormFields: {
-    kind: 'entry.1701457613',    // 기록 종류 (그룹 만들기, 검증, 검증 취소)
-    group: 'entry.742319868',   // 그룹 번호
-    name: 'entry.959786557',    // 그룹 이름
-    intro: 'entry.1090802173',   // 그룹 소개
-    pass: 'entry.171515780',    // 비밀번호 값 (비밀번호를 알아볼 수 없게 바꾼 값)
-    target: 'entry.1827549241',  // 대상 결과물
-    voter: 'entry.2061482021',   // 누른 사람 (알아볼 수 없게 바꾼 값). 방 만들기에서는 방장, 평가에서는 단 매니저.
-    value: 'entry.218580788',      // 평가 금액 (원)
-    improved: 'entry.514858817',   // 개선 시 예상 금액 (원)
-    memo: 'entry.321207415'        // 평가 메모. 이 셋을 채워야 매니저가 예상 가치를 달 수 있다.
-  },
-  // 사이트 매니저의 계정 번호(내 정보 화면 아래쪽의 g로 시작하는 값). 모든 공개 결과물에 예상 가치를 달 수 있다.
+  // Supabase 프로젝트 주소와 공개 키(publishable 또는 anon). 공개 키는 사이트에 넣어도 되는 키다.
+  // 절대 secret / service_role 키를 넣지 말 것. 둘 다 비어 있으면 등록, 그룹, 좋아요 기능을 닫아 둔다.
+  supabaseUrl: '',
+  supabaseKey: '',
+  // 사이트 매니저의 계정 번호(내 정보 화면 아래쪽의 g로 시작하는 값). 모든 결과물에 예상 가치를 달 수 있다.
+  // 서버 권한은 Supabase 의 managers 표가 정한다. 여기는 화면 표시에만 쓰므로 두 곳을 같이 고칠 것.
   // 방장은 따로 적지 않아도 된다. 방을 만든 사람이 그 방의 방장이다.
   managers: [],
   // 방 목록 맨 위(#1)에 둘 방 이름

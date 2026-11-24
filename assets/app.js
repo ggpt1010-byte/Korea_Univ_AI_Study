@@ -10,23 +10,28 @@ async function fetchJson(path) {
   return Array.isArray(data) ? data : [];
 }
 
-// 모임원이 구글 폼으로 등록한 결과물. 시트를 바로 읽고, 안 되면 저장소에 받아 둔 사본을 쓴다.
+// 모임원이 올린 결과물. Supabase 서버가 내가 볼 수 있는 것만 내려 준다(비공개는 그 방 멤버에게만).
 async function loadSubmitted() {
-  const config = globalThis.SITE_CONFIG || {};
-  if (!config.sheetCsvUrl) return [];
-  try {
-    const res = await fetch(config.sheetCsvUrl, { cache: 'no-store' });
-    if (!res.ok) throw new Error(String(res.status));
-    return SheetData.rowsToProjects(SheetData.parseCsv(await res.text()));
-  } catch (err) {
-    try { return await fetchJson('data/submissions.json'); } catch (err2) { return []; }
-  }
+  const DB = globalThis.DB;
+  if (!DB || !DB.enabled) return [];
+  const rows = await DB.select('projects', 'id,title,summary,author,category,url,description,owner,group_id,is_private,images,parent,changes,created_at');
+  return rows.map((r) => {
+    const t = Date.parse(r.created_at) || 0;
+    return {
+      id: r.id, title: r.title, summary: r.summary || '', author: r.author || '이름 없음', category: r.category || '기타',
+      url: r.url, description: r.description || '',
+      createdAt: t ? new Date(t + 9 * 3600 * 1000).toISOString().slice(0, 10) : '', // 한국 날짜
+      owner: r.owner || '', group: r.group_id || '', private: Boolean(r.is_private),
+      images: Array.isArray(r.images) ? r.images.slice(0, 5) : [], parent: r.parent || '', changes: r.changes || '',
+      row: Math.floor(t / 1000) // 같은 날 올린 것끼리 순서를 정하는 데 쓴다.
+    };
+  });
 }
 
 // 최근에 올라온 결과물이 먼저 오도록 정렬해서 돌려준다.
 async function loadProjects() {
   const [base, submitted] = await Promise.all([fetchJson('data/projects.json'), loadSubmitted()]);
-  const key = (p) => String(p.updatedAt || p.createdAt || '') + '#' + String(p.row || 0).padStart(6, '0');
+  const key = (p) => String(p.updatedAt || p.createdAt || '') + '#' + String(p.row || 0).padStart(12, '0');
   return SheetData.mergeVersions(submitted.concat(base)).sort((a, b) => key(b).localeCompare(key(a)));
 }
 
@@ -112,7 +117,7 @@ function statItem(icon, label, n, extraClass) {
   item.append(el('span', { class: 'sr-only', text: label + ' ' }), document.createTextNode(Number(n || 0).toLocaleString('ko-KR')));
   return item;
 }
-// 좋아요 버튼. 카드와 상세 화면에서 같이 쓴다. 누르면 바로 숫자가 바뀌고, 다른 사람에게는 몇 분 뒤에 반영된다.
+// 좋아요 버튼. 카드와 상세 화면에서 같이 쓴다. 누르면 서버에 바로 저장된다.
 function likeButton(p, data, extraClass, withLabel) {
   const G = globalThis.Groups;
   if (!G || !G.enabled) return statItem('heart', '좋아요', 0);

@@ -77,7 +77,7 @@
   function showManager(me) {
     if (!M || !M.isManager(me.owner, data)) { mgr.hidden = true; return; }
     const roles = [];
-    if (M.isSiteManager(me.owner)) roles.push('사이트 매니저예요. 모든 공개 결과물에 금액을 달 수 있어요.');
+    if (M.isSiteManager(me.owner, data)) roles.push('사이트 매니저예요. 모든 공개 결과물에 금액을 달 수 있어요.');
     const owned = M.ownedGroups(me.owner, data).map((g) => g.name);
     if (owned.length) roles.push('방장인 방: ' + owned.join(', ') + '. 이 방에 올라온 결과물에 금액을 달 수 있어요.');
     document.getElementById('mgr-role').textContent = roles.join(' ');

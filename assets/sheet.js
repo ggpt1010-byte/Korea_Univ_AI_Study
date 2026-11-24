@@ -176,8 +176,8 @@
       var chain = chains[rootId].slice().sort(function (a, b) {
         if (a === root) return -1;
         if (b === root) return 1;
-        return (String(a.createdAt) + '#' + String(a.row || 0).padStart(6, '0'))
-          .localeCompare(String(b.createdAt) + '#' + String(b.row || 0).padStart(6, '0'));
+        return (String(a.createdAt) + '#' + String(a.row || 0).padStart(12, '0'))
+          .localeCompare(String(b.createdAt) + '#' + String(b.row || 0).padStart(12, '0'));
       });
       var last = chain[chain.length - 1];
       var merged = Object.assign({}, last, {

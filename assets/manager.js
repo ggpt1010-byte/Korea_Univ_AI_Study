@@ -1,8 +1,6 @@
 // 평가 금액과 매니저(사이트 매니저, 방장).
-// 서버가 없는 사이트라서 진짜 권한 확인은 아니다.
-// - 매니저는 구글 로그인 계정 번호로 정한다. 사이트 매니저는 config.js 의 managers, 방장은 방을 만든 사람이다.
-// - 평가 기록은 공개 그룹 폼으로 보내므로, 마음먹은 사람은 남의 계정 번호를 적어 가짜 기록을 넣을 수 있다.
-//   화면에서는 매니저 계정 번호로 남은 기록만 보여 준다.
+// - 매니저는 구글 로그인 계정 번호로 정한다. 사이트 매니저는 Supabase 의 managers 표(와 config.js 의 managers),
+//   방장은 방을 만든 사람이다. 평가 기록을 남길 수 있는지는 서버가 다시 확인한다.
 // - 매니저의 Anthropic API 키는 매니저 브라우저에서 Anthropic으로만 간다. "기억하기"를 켠 경우에만 이 브라우저에 남는다.
 (function () {
   var config = globalThis.SITE_CONFIG || {};
@@ -12,17 +10,20 @@
   var SITE = (Array.isArray(config.managers) ? config.managers : []).filter(function (o) { return /^g[0-9a-f]{16}$/.test(o); });
 
   function me() { return globalThis.Account && globalThis.Account.current(); }
-  function isSiteManager(owner) { return Boolean(owner) && SITE.indexOf(owner) !== -1; }
+  function isSiteManager(owner, data) {
+    var d = data || {};
+    return Boolean(owner) && (SITE.indexOf(owner) !== -1 || (d.managers || []).indexOf(owner) !== -1);
+  }
   function ownedGroups(owner, data) {
     if (!owner || !data) return [];
     return data.groups.filter(function (g) { return g.owner === owner; });
   }
-  function isManager(owner, data) { return isSiteManager(owner) || ownedGroups(owner, data).length > 0; }
+  function isManager(owner, data) { return isSiteManager(owner, data) || ownedGroups(owner, data).length > 0; }
 
   // 사이트 매니저는 모든 결과물에, 방장은 자기 방에 올라온 결과물에 금액을 달 수 있다.
   function canValue(owner, p, data) {
     if (!owner || !p) return false;
-    if (isSiteManager(owner)) return true;
+    if (isSiteManager(owner, data)) return true;
     if (!p.group || !data) return false;
     var g = data.groups.find(function (x) { return x.id === p.group; });
     return Boolean(g && g.owner && g.owner === owner);
@@ -65,7 +66,7 @@
     return out;
   }
 
-  // 방금 보낸 기록은 시트에 반영되기 전이라도 이 화면에서 바로 보이게 덧붙인다.
+  // 방금 보낸 기록을 다시 불러오지 않고도 이 화면에서 바로 보이게 덧붙인다.
   function addLocal(data, ev) {
     if (!data) return;
     data.valueEvents = (data.valueEvents || []).concat([Object.assign({ at: Date.now(), row: 1e9 }, ev)]);

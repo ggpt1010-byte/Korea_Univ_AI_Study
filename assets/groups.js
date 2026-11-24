@@ -1,88 +1,90 @@
-// 비밀번호 그룹: 방 만들기, 들어가기, 검증 기록. 평가 금액 기록도 같은 그룹 폼으로 보낸다.
-// 서버가 없는 사이트라서 진짜 보안 기능은 아니다.
-// - 비밀번호는 원문 대신 알아볼 수 없게 바꾼 값(PBKDF2-SHA256)만 공개 시트에 남는다.
-// - 시트와 저장소는 공개라서, 마음먹으면 비공개 결과물의 내용도 볼 수 있다.
-// - 비밀번호를 맞힌 기록은 이 브라우저(localStorage)에만 남는다.
+// 비밀번호 그룹(방), 검증, 좋아요, 조회, 평가 기록. 모두 Supabase 서버에서 확인한다.
+// - 그룹 비밀번호는 서버에서만 확인한다(bcrypt). 맞히면 그 구글 계정이 방 멤버로 등록된다.
+// - 비공개 결과물과 그 방의 검증 기록은 서버가 멤버에게만 내려 준다.
+// - 좋아요와 조회는 로그인했으면 계정당, 아니면 브라우저당 하나로 센다.
 (function () {
   var config = globalThis.SITE_CONFIG || {};
-  var fields = config.groupFormFields || {};
-  var FIELD_NAMES = ['kind', 'group', 'name', 'intro', 'pass', 'target', 'voter'];
-  var enabled = Boolean(config.groupSheetCsvUrl && config.groupFormAction) &&
-    FIELD_NAMES.every(function (n) { return fields[n]; });
-  var MEMBER_KEY = 'korai.groups.v1';
-  var VOTE_KEY = 'korai.votes.v1';
+  var DB = globalThis.DB || { enabled: false };
+  var enabled = Boolean(DB.enabled);
   var DEVICE_KEY = 'korai.device.v1';
   var GOAL = Number(config.verifyGoal) > 0 ? Number(config.verifyGoal) : 3;
+  var EMPTY = function () { return { groups: [], members: [], votes: {}, valueEvents: [], likes: {}, views: {}, managers: [] }; };
 
-  function readJson(key) {
-    try {
-      var v = JSON.parse(localStorage.getItem(key) || '{}');
-      return v && typeof v === 'object' ? v : {};
-    } catch (err) { return {}; }
-  }
-  function writeJson(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (err) { /* 저장을 막은 브라우저 */ }
-  }
   function hex(buf) {
     return Array.from(new Uint8Array(buf)).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
   }
-
-  // 그룹 번호를 소금으로 써서, 같은 비밀번호라도 그룹마다 다른 값이 나오게 한다.
-  function passKey(groupId, password) {
-    var enc = new TextEncoder();
-    return crypto.subtle.importKey('raw', enc.encode(String(password)), 'PBKDF2', false, ['deriveBits'])
-      .then(function (key) {
-        return crypto.subtle.deriveBits(
-          { name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode('korai-group:' + groupId), iterations: 150000 },
-          key, 256);
-      })
-      .then(hex);
-  }
+  function time(v) { var t = Date.parse(v); return Number.isFinite(t) ? t : 0; }
 
   var loading = null;
+  var last = EMPTY();
   function load(force) {
-    if (!enabled) return Promise.resolve({ groups: [], votes: {}, valueEvents: [], likes: {}, views: {} });
+    if (!enabled) return Promise.resolve(EMPTY());
     if (loading && !force) return loading;
-    loading = fetch(config.groupSheetCsvUrl, { cache: 'no-store' })
-      .then(function (res) {
-        if (!res.ok) throw new Error('그룹 목록을 불러오지 못했어요 (' + res.status + ')');
-        return res.text();
-      })
-      .then(function (text) { return SheetData.rowsToGroups(SheetData.parseCsv(text)); });
+    loading = Promise.all([
+      DB.select('groups', 'id,name,intro,owner,created_at'),
+      DB.select('group_members', 'group_id'),
+      DB.select('votes', 'group_id,target,voter'),
+      DB.select('value_events', 'kind,target,by_owner,value,improved,memo,at,id'),
+      DB.select('likes', 'target,voter'),
+      DB.call('view_counts'),
+      DB.select('managers', 'owner')
+    ]).then(function (r) {
+      var out = EMPTY();
+      out.groups = r[0].slice().sort(function (a, b) { return time(a.created_at) - time(b.created_at); })
+        .map(function (g) { return { id: g.id, name: g.name, intro: g.intro || '', owner: g.owner || '' }; });
+      out.members = r[1].map(function (m) { return m.group_id; });
+      r[2].forEach(function (v) {
+        var bucket = out.votes[v.group_id] = out.votes[v.group_id] || {};
+        (bucket[v.target] = bucket[v.target] || []).push(v.voter);
+      });
+      out.valueEvents = r[3].slice().sort(function (a, b) { return a.id - b.id; }).map(function (e) {
+        return { kind: e.kind, target: e.target, by: e.by_owner, at: time(e.at), value: e.value == null ? null : Number(e.value), improved: e.improved == null ? null : Number(e.improved), memo: e.memo || '' };
+      });
+      r[4].forEach(function (l) { (out.likes[l.target] = out.likes[l.target] || []).push(l.voter); });
+      (r[5] || []).forEach(function (v) { out.views[v.target] = Number(v.n) || 0; });
+      out.managers = r[6].map(function (m) { return m.owner; });
+      last = out;
+      return out;
+    });
     loading.catch(function () { loading = null; });
     return loading;
   }
+  // 로그인 상태가 바뀌면 볼 수 있는 내용도 바뀌므로 다시 불러온다.
+  if (globalThis.Account && globalThis.Account.onChange) globalThis.Account.onChange(function () { loading = null; });
 
-  function memberships() { return readJson(MEMBER_KEY); }
-  function join(id, name, key) {
-    var all = memberships();
-    all[id] = { name: String(name).slice(0, 40), key: key, at: Date.now() };
-    writeJson(MEMBER_KEY, all);
-  }
-  function leave(id) {
-    var all = memberships();
-    delete all[id];
-    writeJson(MEMBER_KEY, all);
-  }
-  // 시트에 아직 안 올라온 새 그룹은, 만든 사람의 브라우저에서는 들어갈 수 있게 둔다.
-  function isMember(id, data) {
-    var m = memberships()[id];
-    if (!m) return false;
-    var g = data && data.groups.find(function (x) { return x.id === id; });
-    return !g || g.pass === m.key;
-  }
+  function isMember(id, data) { return ((data || last).members || []).indexOf(id) !== -1; }
   function myGroups(data) {
-    var all = memberships();
-    return Object.keys(all).filter(function (id) { return isMember(id, data); }).map(function (id) {
-      var g = data && data.groups.find(function (x) { return x.id === id; });
-      return { id: id, name: g ? g.name : all[id].name, intro: g ? g.intro : '', pending: !g };
+    var d = data || last;
+    return d.groups.filter(function (g) { return isMember(g.id, d); });
+  }
+  // 예전 코드와 맞추기 위한 것: { 그룹 번호: { name } }
+  function memberships(data) {
+    var out = {};
+    myGroups(data).forEach(function (g) { out[g.id] = { name: g.name }; });
+    return out;
+  }
+
+  function join(id, password) {
+    return DB.call('join_group', { gid: id, pass: String(password) }).then(function (ok) {
+      if (ok) { loading = null; if (last.members.indexOf(id) === -1) last.members.push(id); }
+      return Boolean(ok);
     });
   }
+  function leave(id) {
+    return DB.call('leave_group', { gid: id }).then(function () { loading = null; });
+  }
+  function setPassword(id, password) {
+    return DB.call('set_group_password', { gid: id, pass: String(password) }).then(function () { loading = null; });
+  }
+  function hasPassword(id) { return DB.call('has_password', { gid: id }); }
 
-  // 검증을 누른 사람 표시. 구글 로그인을 했으면 계정 번호, 아니면 이 브라우저의 무작위 번호.
+  // 좋아요와 조회에 쓰는 번호. 구글 로그인을 했으면 계정 번호, 아니면 이 브라우저의 무작위 번호.
   function voterId() {
     var me = globalThis.Account && globalThis.Account.current();
     if (me && me.owner) return me.owner;
+    return deviceId();
+  }
+  function deviceId() {
     var id = '';
     try { id = localStorage.getItem(DEVICE_KEY) || ''; } catch (err) { id = ''; }
     if (!/^d[0-9a-f]{16}$/.test(id)) {
@@ -92,76 +94,62 @@
     return id;
   }
 
-  function send(values) {
-    var body = new URLSearchParams();
-    Object.keys(values).forEach(function (n) { if (fields[n]) body.append(fields[n], values[n]); });
-    // 구글 폼은 다른 사이트에서 보낸 요청의 결과를 알려 주지 않는다. 요청이 나갔으면 접수된 것으로 본다.
-    return fetch(config.groupFormAction, { method: 'POST', mode: 'no-cors', body: body });
+  // 방은 구글 로그인한 사람만 만들 수 있고, 만든 사람이 방장이 된다.
+  function createGroup(name, intro, password) {
+    var id = SheetData.groupKey(name);
+    return DB.call('create_group', { p_id: id, p_name: name, p_intro: intro, p_pass: String(password) })
+      .then(function () { loading = null; return id; });
   }
 
-  // 방은 구글 로그인한 사람만 만들 수 있고, 만든 사람의 계정 번호가 방장으로 남는다.
-  function createGroup(name, intro, password, owner) {
-    var id = SheetData.groupKey(name);
-    return passKey(id, password).then(function (key) {
-      return send({ kind: '그룹 만들기', group: id, name: name, intro: intro, pass: key, voter: owner }).then(function () {
-        join(id, name, key);
-        return id;
-      });
+  function toggle(list, who, on) {
+    var at = list.indexOf(who);
+    if (on && at === -1) list.push(who);
+    if (!on && at !== -1) list.splice(at, 1);
+  }
+
+  function votersFor(data, groupId, target) {
+    return (((data || last).votes[groupId] || {})[target] || []).slice();
+  }
+  function vote(groupId, target, on) {
+    return DB.call('vote', { gid: groupId, p_target: target, p_on: Boolean(on) }).then(function () {
+      var bucket = last.votes[groupId] = last.votes[groupId] || {};
+      toggle(bucket[target] = bucket[target] || [], voterId(), on);
     });
   }
 
-  // 시트에 반영되기 전까지는 내가 누른 것을 이 브라우저에 따로 기억해 숫자에 바로 보이게 한다.
-  function votersFor(data, groupId, target) {
-    var list = ((data.votes[groupId] || {})[target] || []).slice();
-    var mine = readJson(VOTE_KEY)[groupId + '|' + target];
-    var me = voterId();
-    var has = list.indexOf(me) !== -1;
-    if (mine === true && !has) list.push(me);
-    if (mine === false && has) list.splice(list.indexOf(me), 1);
-    return list;
-  }
-  function vote(groupId, target, on) {
-    var local = readJson(VOTE_KEY);
-    local[groupId + '|' + target] = Boolean(on);
-    writeJson(VOTE_KEY, local);
-    return send({ kind: on ? '검증' : '검증 취소', group: groupId, target: target, voter: voterId() });
-  }
-
-  // 좋아요: 검증과 같은 방식. 로그인했으면 계정당, 아니면 브라우저당 하나로 센다.
-  var LIKE_KEY = 'korai.likes.v1';
-  var VIEW_KEY = 'korai.views.v1';
-  function likersFor(data, target) {
-    var list = (((data && data.likes) || {})[target] || []).slice();
-    var mine = readJson(LIKE_KEY)[target];
-    var me = voterId();
-    var has = list.indexOf(me) !== -1;
-    if (mine === true && !has) list.push(me);
-    if (mine === false && has) list.splice(list.indexOf(me), 1);
-    return list;
-  }
+  function likersFor(data, target) { return (((data || last).likes || {})[target] || []).slice(); }
   function like(target, on) {
-    var local = readJson(LIKE_KEY);
-    local[target] = Boolean(on);
-    writeJson(LIKE_KEY, local);
-    return send({ kind: on ? '좋아요' : '좋아요 취소', target: target, voter: voterId() });
+    return DB.call('like_project', { p_target: target, p_on: Boolean(on), p_device: deviceId() }).then(function () {
+      toggle(last.likes[target] = last.likes[target] || [], voterId(), on);
+    });
   }
-  function today() { return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
-  // 조회: 상세 화면을 열 때 이 브라우저에서 그날 처음이면 한 번 보낸다.
-  function view(target) {
-    var seen = readJson(VIEW_KEY);
-    var day = today();
-    Object.keys(seen).forEach(function (k) { if (seen[k] !== day) delete seen[k]; }); // 지난 날 기록은 지운다.
-    if (seen[target] === day) { writeJson(VIEW_KEY, seen); return false; }
-    seen[target] = day;
-    writeJson(VIEW_KEY, seen);
-    send({ kind: '조회', target: target, voter: voterId() }).catch(function () {});
-    return true;
-  }
-  function viewsFor(data, target) { return (((data && data.views) || {})[target] || 0); }
 
-  // 평가 금액 기록. 그룹 폼에 평가 질문 세 개가 있어야 쓸 수 있다.
-  var valueReady = enabled && Boolean(fields.value && fields.improved && fields.memo);
-  function record(values) { return send(values); }
+  // 조회: 상세 화면을 열 때 이 브라우저에서 그날 처음이면 한 번 보낸다(서버도 하루 한 번만 센다).
+  var VIEW_KEY = 'korai.views.v1';
+  function today() { return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
+  function view(target) {
+    var seen = {};
+    try { seen = JSON.parse(localStorage.getItem(VIEW_KEY) || '{}') || {}; } catch (err) { seen = {}; }
+    var day = today();
+    Object.keys(seen).forEach(function (k) { if (seen[k] !== day) delete seen[k]; });
+    var first = seen[target] !== day;
+    seen[target] = day;
+    try { localStorage.setItem(VIEW_KEY, JSON.stringify(seen)); } catch (err) { /* 무시 */ }
+    if (first) DB.call('record_view', { p_target: target, p_device: deviceId() }).catch(function () {});
+    return first;
+  }
+  function viewsFor(data, target) { return (((data || last).views || {})[target] || 0); }
+
+  // 평가 기록(분석 시작, 분석 취소, 가치 평가). 서버가 매니저나 방장인지 확인한다.
+  var valueReady = enabled;
+  function record(values) {
+    return DB.call('record_value', {
+      p_kind: values.kind, p_target: values.target,
+      p_value: values.value == null || values.value === '' ? null : Number(values.value),
+      p_improved: values.improved == null || values.improved === '' ? null : Number(values.improved),
+      p_memo: values.memo || ''
+    });
+  }
 
   globalThis.Groups = {
     enabled: enabled,
@@ -173,9 +161,10 @@
     viewsFor: viewsFor,
     goal: GOAL,
     load: load,
-    passKey: passKey,
     join: join,
     leave: leave,
+    setPassword: setPassword,
+    hasPassword: hasPassword,
     isMember: isMember,
     myGroups: myGroups,
     memberships: memberships,

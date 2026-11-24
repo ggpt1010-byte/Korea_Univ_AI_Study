@@ -403,3 +403,6 @@ ol.group-list { list-style: none; margin: 0; padding: 0; }
 .grid-4 .card-top { flex-direction: column; gap: 8px; }
 .grid-4 .card-when { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 10px; text-align: left; }
 .card-when span { white-space: nowrap; }
+
+/* 잠깐 띄우는 안내 (로그인 실패 등) */
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; max-width: calc(100% - 32px); padding: 12px 16px; border-radius: 10px; background: #151821; color: #fff; font-size: 15px; box-shadow: 0 6px 24px rgba(0,0,0,.2); }

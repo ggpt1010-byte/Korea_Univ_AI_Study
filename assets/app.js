@@ -149,27 +149,32 @@ function viewCount(p, data) { const G = globalThis.Groups; return G && G.viewsFo
 // 오픈소스, 같이 할 사람 구함 배지. 카드와 상세 화면에서 같이 쓴다.
 ICONS.code = '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 4.5L2 8l3.5 3.5M10.5 4.5L14 8l-3.5 3.5"/></svg>';
 ICONS.hand = '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="5" r="2.2"/><circle cx="11" cy="5.5" r="1.8"/><path d="M1.8 13.5c.4-2.4 1.8-3.8 3.7-3.8s3.3 1.4 3.7 3.8M9.6 9.8c1.9-.4 3.9.6 4.6 3.2"/></svg>';
-function collabTags(p) {
+// compact: 카드처럼 좁은 곳에서 쓰는 짧은 이름.
+function collabTags(p, compact) {
   const out = [];
   if (p.openSource) {
     const t = el('span', { class: 'tag tag-open' });
     t.innerHTML = ICONS.code;
-    t.append(document.createTextNode('오픈소스'));
+    t.append(el('span', { class: 'tag-text', text: '오픈소스' }));
+    if (compact) t.title = '오픈소스';
     out.push(t);
   }
   if (p.seeking) {
     const t = el('span', { class: 'tag tag-seeking' });
     t.innerHTML = ICONS.hand;
-    t.append(document.createTextNode('같이 할 사람 구함'));
+    t.append(el('span', { class: 'tag-text', text: compact ? '팀원 구함' : '같이 할 사람 구함' }));
+    if (compact) t.title = '같이 할 사람 구함';
     out.push(t);
   }
   return out;
 }
 
-function visibilityTag(p) {
-  const tag = el('span', { class: 'tag ' + (p.private ? 'tag-private' : 'tag-public') });
+// compact: 아이콘만 보이고 글은 화면 읽기 프로그램과 마우스를 올렸을 때만.
+function visibilityTag(p, compact) {
+  const label = p.private ? '비공개' : '공개';
+  const tag = el('span', { class: 'tag ' + (p.private ? 'tag-private' : 'tag-public') + (compact ? ' tag-icon' : ''), title: compact ? label : null });
   tag.innerHTML = p.private ? ICONS.lock : ICONS.globe;
-  tag.append(document.createTextNode(p.private ? '비공개' : '공개'));
+  tag.append(compact ? el('span', { class: 'sr-only', text: label }) : document.createTextNode(label));
   return tag;
 }
 
@@ -219,20 +224,16 @@ function shortDate(value) {
 
 // 목록, 내 정보, 그룹 화면에서 같이 쓰는 결과물 카드. extra 는 카드 아래쪽에 덧붙일 요소, data 는 그룹 기록.
 function projectCard(p, extra, data) {
+  const when = shortDate(p.updatedAt || p.createdAt);
   return el('article', { class: 'card' }, [
     thumbnail(p),
     el('div', { class: 'card-body' }, [
-      el('div', { class: 'card-top' }, [
-        el('div', { class: 'tag-row' }, [
-          el('span', { class: 'tag', text: p.category || '기타' }), visibilityTag(p),
-          p.version > 1 ? el('span', { class: 'tag tag-version', text: 'v' + p.version }) : null
-        ].concat(collabTags(p))),
-        el('div', { class: 'card-when' }, [
-          shortDate(p.updatedAt || p.createdAt) ? el('span', { text: shortDate(p.updatedAt || p.createdAt) }) : null,
-          el('span', { text: p.author })
-        ])
-      ]),
-      el('h2', {}, [el('a', { href: projectLink(p), text: p.title })]),
+      el('div', { class: 'tag-row tag-row-card' }, [
+        el('span', { class: 'tag', text: p.category || '기타' }), visibilityTag(p, true),
+        p.version > 1 ? el('span', { class: 'tag tag-version', text: 'v' + p.version }) : null
+      ].concat(collabTags(p, true))),
+      el('h2', { title: p.title }, [el('a', { href: projectLink(p), text: p.title })]),
+      el('p', { class: 'card-when', text: [p.author, when].filter(Boolean).join(' · ') }),
       el('p', { class: 'summary', text: p.summary }),
       el('div', { class: 'card-stats' }, [likeButton(p, data, 'like-mini'), statItem('eye', '조회수', viewCount(p, data))]),
       valueLine(p, data),

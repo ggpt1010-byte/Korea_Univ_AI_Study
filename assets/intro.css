@@ -98,7 +98,7 @@
 .i-stage-wrap { position: sticky; top: 96px; }
 /* 카드끼리 3D 공간을 나누지 않게(flat) 하고, 카드마다 perspective() 로 기울인다.
    preserve-3d 로 두면 일부 안드로이드 크롬에서 두 카드가 서로 파고들어 잘려 보였다. */
-.i-stage { position: relative; height: 470px; transform-style: flat; }
+.i-stage { position: relative; height: 520px; transform-style: flat; }
 .i-stage-note { position: absolute; bottom: -30px; left: 0; margin: 0; font-size: 14px; color: var(--muted); }
 
 .i-card {
@@ -230,6 +230,46 @@
 .i-final p { margin: 0; font-size: 18px; color: #DCE2FF; }
 .i-final .i-cta { justify-content: center; }
 
+
+/* 5단계: 창업 카드 */
+.i-card-launch {
+  top: 60px; padding: 24px; display: flex; flex-direction: column; gap: 10px; overflow: visible;
+  background: linear-gradient(140deg, var(--night) 0%, var(--night-2) 70%, #1F3A8F 100%); color: #FFFFFF; border-color: transparent;
+  opacity: 0; visibility: hidden; transform: perspective(1200px) translate3d(60px, 160px, 120px) rotateY(-24deg) scale(.9); pointer-events: none;
+}
+.i-launch-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.i-launch-badge { padding: 4px 12px; border-radius: 999px; background: #FFFFFF; color: var(--ink); font-size: 14px; font-weight: 700; }
+.i-launch-live { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #9FF0D9; }
+.i-launch-live i { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 0 rgba(63,214,176,.6); animation: i-pulse 1.6s infinite; }
+@keyframes i-pulse { 70% { box-shadow: 0 0 0 10px rgba(63,214,176,0); } 100% { box-shadow: 0 0 0 0 rgba(63,214,176,0); } }
+.i-launch-title { font-size: 28px; font-weight: 900; letter-spacing: -0.02em; }
+.i-launch-sub { font-size: 15px; color: #DCE2FF; }
+.i-launch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.i-launch-grid > div { padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.1); display: flex; flex-direction: column; gap: 2px; }
+.i-launch-num { font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.i-launch-label { font-size: 13px; color: #DCE2FF; }
+.i-card-launch .i-mini-people span { border-color: var(--night); }
+.i-card-launch .i-mini-people em { color: #9FF0D9; }
+.i-spark { position: absolute; width: 10px; height: 10px; border-radius: 2px; opacity: 0; }
+.i-spark.s1 { top: -10px; left: 20%; background: var(--mint); }
+.i-spark.s2 { top: 10px; right: -8px; background: #FFC857; }
+.i-spark.s3 { bottom: 30px; left: -10px; background: var(--glow); }
+.i-stage[data-step="5"] .i-spark { animation: i-burst 1.6s .5s ease-out 2; }
+.i-stage[data-step="5"] .i-spark.s2 { animation-delay: .7s; }
+.i-stage[data-step="5"] .i-spark.s3 { animation-delay: .9s; }
+@keyframes i-burst { 0% { opacity: 0; transform: translateY(0) rotate(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40px) rotate(180deg); } }
+
+.i-stage[data-step="5"] .i-value, .i-stage[data-step="5"] .i-repo, .i-stage[data-step="5"] .i-chip-os { opacity: 1; transform: none; }
+.i-stage[data-step="5"] .i-card-v1 .i-repo { max-height: 60px; padding-top: 8px; padding-bottom: 8px; border-width: 1px; }
+.i-stage[data-step="5"] .i-card-v1 { transform: perspective(1200px) translate3d(-40px, -40px, -220px) rotateY(16deg); opacity: 0; }
+.i-stage[data-step="5"] .i-card-v2 { opacity: 1; visibility: visible; transform: perspective(1200px) translate3d(-10px, 40px, -80px) rotateY(10deg); }
+.i-stage[data-step="5"] .i-card-launch { opacity: 1; visibility: visible; transform: perspective(1200px) translate3d(30px, 150px, 40px) rotateY(-6deg); }
+
+/* 숫자 칸 링크 */
+.i-stat-link { text-decoration: none; color: inherit; transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
+.i-stat-link:hover { color: inherit; border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 12px 28px rgba(52,81,209,.15); }
+.i-stat-go { display: block; margin-top: 4px; font-size: 14px; font-weight: 700; color: var(--accent); }
+
 /* 폰 */
 @media (max-width: 860px) {
   .i-hero-inner { grid-template-columns: 1fr; padding: 48px 16px 104px; gap: 40px; }
@@ -237,7 +277,7 @@
   .i-journey { padding: 72px 16px 40px; }
   .i-journey-body { grid-template-columns: 1fr; gap: 0; }
   .i-stage-wrap { top: 8px; z-index: 2; background: var(--ground); padding: 8px 0 34px; }
-  .i-stage { height: 330px; max-width: 360px; margin: 0 auto; }
+  .i-stage { height: 340px; max-width: 360px; margin: 0 auto; }
   .i-card-shot { height: 84px; }
   .i-card-body { padding: 14px 16px 16px; gap: 7px; }
   .i-card-title { font-size: 18px; }
@@ -251,6 +291,11 @@
   .i-stage[data-step="4"] .i-card-v2 { transform: perspective(1200px) translate3d(0, 70px, 60px) rotateY(-4deg) scale(.95); }
   .i-stage[data-step="4"] .i-card-v1 { transform: perspective(1200px) translate3d(-10px, -10px, -140px) rotateY(10deg); }
   .i-stage-note { bottom: -26px; }
+  .i-stage[data-step="5"] .i-card-launch { transform: perspective(1200px) translate3d(0, 10px, 40px) rotateY(-4deg) scale(.95); }
+  .i-stage[data-step="5"] .i-card-v2 { transform: perspective(1200px) translate3d(-6px, -6px, -80px) rotateY(8deg) scale(.92); }
+  .i-card-launch { padding: 18px; gap: 8px; }
+  .i-launch-title { font-size: 22px; }
+  .i-launch-num { font-size: 20px; }
   .i-step { min-height: 70vh; padding-left: 20px; justify-content: flex-start; padding-top: 32px; }
   .i-step p { font-size: 16px; }
   .i-values, .i-stats { padding-left: 16px; padding-right: 16px; }
@@ -266,4 +311,5 @@
   .i-grad, .i-mini-back, .i-mini-front, .i-float, .i-scroll-hint span { animation: none; }
   .i-mini-chart path, .i-card-chart path { animation: none; stroke-dashoffset: 0; }
   .i-card, .i-bubble { transition: none; }
+  .i-spark, .i-launch-live i { animation: none; }
 }

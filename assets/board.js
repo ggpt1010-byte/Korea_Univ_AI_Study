@@ -80,7 +80,7 @@ function boardSections(opts) {
       el('p', { class: 'count', text: '최근 ' + WEEK_DAYS + '일 새 결과물과 새 버전 · ' + week.length + '개' })
     ]),
     week.length
-      ? el('div', { class: 'grid grid-4' }, week.map(card))
+      ? el('div', { class: 'grid grid-cards' }, week.map(card))
       : el('p', { class: 'hint', text: '이번 주에 올라오거나 새 버전이 나온 결과물이 아직 없어요.' })
   ]);
 
@@ -91,7 +91,7 @@ function boardSections(opts) {
       el('p', { class: 'count', text: '좋아요를 가장 많이 받은 결과물이에요.' })
     ]),
     top.length
-      ? el('div', { class: 'grid grid-4' }, top.map(card))
+      ? el('div', { class: 'grid grid-cards' }, top.map(card))
       : el('p', { class: 'hint', text: '아직 좋아요를 받은 결과물이 없어요. 마음에 드는 결과물에 ♡를 눌러 주세요.' })
   ]);
 
@@ -109,7 +109,7 @@ function boardSections(opts) {
       el('div', { class: 'sort-box' }, [el('label', { for: prefix + '-sort', text: '정렬' }), sortSelect])
     ]),
     rest.length
-      ? el('div', { class: 'grid grid-4' }, rest.map(card))
+      ? el('div', { class: 'grid grid-cards' }, rest.map(card))
       : el('div', { class: 'empty' }, [el('p', { text: opts.emptyText || 'Top ' + TOP + ' 말고는 아직 결과물이 없어요.' })])
   ]);
   return [weekBox, topBox, restBox];

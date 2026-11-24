@@ -415,3 +415,33 @@ ol.group-list { list-style: none; margin: 0; padding: 0; }
 .eval-older[open] > .eval-item { margin-top: 8px; }
 .tag-ai { background: var(--tint); color: var(--accent-dark); }
 .tag-final { background: #E7F6EC; color: #1E6B3A; }
+
+/* ---- 같이 개선하기 ---- */
+.tag-open { background: #EEF0FF; color: #2A3FA8; }
+.tag-seeking { background: #FFF4D6; color: #6B4A00; }
+.chip-sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+.collab { gap: 16px; }
+.collab h3 { margin: 4px 0 0; font-size: 17px; }
+.idea-list, .panel .idea-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.idea-item { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.idea-item.is-joined { border-color: var(--accent); background: var(--tint); }
+.idea-item.is-pending { border-style: dashed; }
+.idea-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.panel .idea-body { margin: 0; color: var(--ink); font-weight: 500; line-height: 1.6; }
+.idea-gain { flex: none; padding: 2px 10px; border-radius: 999px; background: #E7F6EC; color: #1E6B3A; font-size: 14px; font-weight: 700; }
+.idea-item .actions, .collab > .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.join-form input { width: 100%; }
+.panel .join-list, .join-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
+.join-list li { padding: 8px 12px; border-radius: 10px; background: var(--ground); line-height: 1.6; }
+.idea-closed { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.collab-settings summary, .eval-older summary { cursor: pointer; font-weight: 500; }
+.collab-settings .stack-sm { margin-top: 12px; }
+.credit-line { display: flex; flex-direction: column; gap: 4px; }
+.panel .value-change { margin: 0; font-size: 15px; color: var(--body); }
+.value-change.is-up strong { color: #1E6B3A; }
+.value-change.is-down strong { color: #A33A2B; }
+.panel .credit-people { margin: 0; font-size: 15px; }
+.collab-me { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.collab-block { padding: 20px; gap: 12px; }
+.field-label { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+.collab textarea { min-height: 72px; }

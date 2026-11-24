@@ -62,9 +62,51 @@
       f.url.value = parent.url;
       f.description.value = parent.description || '';
       if (f.images) f.images.value = (parent.images || []).join('\n');
+      f.open_source.checked = Boolean(parent.openSource);
+      f.repo_url.value = parent.repoUrl || '';
+      f.license.value = parent.license || '모름';
+      f.seeking.checked = Boolean(parent.seeking);
+      syncOpen();
+      drawCredits(parent);
       const lead = document.querySelector('.page-head p');
       lead.textContent = '"' + parent.title + '"의 v' + ((parent.version || 1) + 1) + '를 올려요. 바뀐 내용을 고치고, 바뀐 점을 적어 주세요. 방과 공개 범위는 처음 버전을 따라가요.';
     }).catch(() => fail('원래 결과물을 불러오지 못했어요. 잠시 뒤에 새로고침해 주세요.'));
+  }
+
+  // 오픈소스와 협업. 오픈소스를 켜야 저장소 주소와 라이선스 칸이 열린다.
+  const C = globalThis.Collab;
+  function syncOpen() { document.getElementById('open-fields').hidden = !form.elements.open_source.checked; }
+  form.elements.open_source.addEventListener('change', syncOpen);
+
+  // 새 버전일 때: 이 결과물의 열린 아이디어 중 반영한 것과, "나도 해볼래요"를 누른 사람 중 도와준 사람을 고른다.
+  function checkList(box, title, name, items) {
+    box.replaceChildren(el('p', { class: 'field-label', text: title }));
+    items.forEach((it) => {
+      const input = el('input', { type: 'checkbox', name: name, value: it.value });
+      const label = el('label', { class: 'radio' });
+      label.append(input, document.createTextNode(' ' + it.label));
+      box.append(label);
+    });
+  }
+  function drawCredits(p) {
+    if (!C) return;
+    C.load().then((c) => {
+      if (!c.ready) return;
+      const ideas = C.ideasFor(c, p.id).filter((i) => i.status === '열림');
+      const people = [];
+      C.ideasFor(c, p.id).forEach((i) => C.joinsFor(c, i.id).forEach((j) => {
+        if (!people.some((x) => x.value === j.owner)) people.push({ value: j.owner, label: j.name + (j.note ? ' · ' + j.note : '') + ' (아이디어: ' + i.body.slice(0, 30) + ')' });
+      }));
+      if (!ideas.length && !people.length) return;
+      const ideaBox = document.getElementById('credit-ideas');
+      const peopleBox = document.getElementById('credit-people');
+      if (ideas.length) checkList(ideaBox, '반영한 개선 아이디어', 'done_ideas', ideas.map((i) => ({ value: String(i.id), label: i.body })));
+      if (people.length) checkList(peopleBox, '도와준 사람', 'contributors', people);
+      document.getElementById('credit-box').hidden = false;
+    }).catch(() => {});
+  }
+  function checkedValues(name) {
+    return Array.from(form.querySelectorAll('input[name="' + name + '"]:checked')).map((i) => i.value);
   }
 
   // 사진 주소. 결과물 폼에 "사진 주소" 질문이 있을 때만 보여 준다.
@@ -137,11 +179,22 @@
     if (images.length > 5) return fail('사진 주소는 5개까지 넣을 수 있어요.', form.elements.images);
     if (images.some((u) => !/^https:\/\//.test(u) || !isWebUrl(u))) return fail('사진 주소는 https:// 로 시작하는 주소로 한 줄에 하나씩 적어 주세요.', form.elements.images);
 
+    const openSource = form.elements.open_source.checked;
+    const repo = form.elements.repo_url.value.trim().replace(/\.git$/, '');
+    if (openSource && !(C ? C.REPO_RE : /^https:\/\/github\.com\/[^/]+\/[^/]+\/?$/).test(repo)) {
+      return fail('저장소 주소는 https://github.com/아이디/저장소 모양으로 적어 주세요.', form.elements.repo_url);
+    }
+
     const me = account && account.current();
-    const payload = Object.assign({}, data, { images: images });
+    const payload = Object.assign({}, data, {
+      images: images, open_source: openSource, repo_url: openSource ? repo : '',
+      license: form.elements.license.value, seeking: form.elements.seeking.checked
+    });
     if (parentId && parent) {
       payload.parent = String(parent.id);
       payload.changes = form.elements.changes.value.trim().slice(0, 1000);
+      payload.done_ideas = checkedValues('done_ideas');
+      payload.contributors = checkedValues('contributors');
     }
     if (groupReady && form.elements.group.value) {
       payload.group = form.elements.group.value;
@@ -168,6 +221,7 @@
 
   document.getElementById('again').addEventListener('click', () => {
     form.reset();
+    syncOpen();
     if (groupReady) syncVisibility();
     done.hidden = true;
     open.hidden = false;

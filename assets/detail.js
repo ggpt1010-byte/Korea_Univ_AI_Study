@@ -62,6 +62,13 @@
   function versionSection(p) {
     const versions = Array.isArray(p.versions) && p.versions.length ? p.versions : [{ v: 1, id: String(p.valueId || p.id), url: p.url, changes: '', createdAt: p.createdAt }];
     const many = versions.length > 1;
+    const C = globalThis.Collab;
+    const collab = data.collab;
+    // 버전마다 지금 평가 금액(매니저 확정, 없으면 AI). 바로 앞 버전과 비교해 오르내린 금액을 보여 준다.
+    const priceOf = (v) => {
+      const x = M ? M.valueOf(Object.assign({}, p, { valueId: v.id }), data) : { state: 'requested' };
+      return x.state === 'done' ? Number(x.value) : null;
+    };
     const items = versions.slice().reverse().map((v) => {
       const list = M ? M.history(p, data, v.id) : [];
       const url = safeUrl(v.url);
@@ -73,14 +80,15 @@
         : [el('p', { class: 'hint', text: val.state === 'analyzing' ? '분석 중이에요.' : '아직 평가가 없어요.' })];
       return el('li', { class: 'version-item' }, [
         el('div', { class: 'version-top' }, [
-          el('strong', { text: many ? 'v' + v.v + (v.v === p.version ? ' (지금 버전)' : '') : '평가 기록' }),
+          el('strong', { text: 'v' + v.v + (v.v === p.version || !many ? ' (지금 버전)' : '') }),
           el('span', { class: 'hint' }, [
             document.createTextNode(formatDate(v.createdAt)),
             many && url ? document.createTextNode(' · ') : null,
             many && url ? el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: '이 버전 체험 링크' }) : null
           ].filter(Boolean))
         ]),
-        many ? (v.changes ? el('p', { text: v.changes }) : (v.v === 1 ? el('p', { text: '처음 올린 버전이에요.' }) : null)) : null
+        many ? (v.changes ? el('p', { text: v.changes }) : (v.v === 1 ? el('p', { text: '처음 올린 버전이에요.' }) : null)) : null,
+        creditLine(v, versions, priceOf, C, collab)
       ].concat(evals));
     });
     return el('section', { class: 'panel', id: 'history' }, [
@@ -88,6 +96,35 @@
       el('ol', { class: 'version-list' }, items)
     ]);
   }
+  // 버전 하나의 "같이 만든 기록": 앞 버전보다 오른 금액, 반영한 아이디어, 도와준 사람.
+  function creditLine(v, versions, priceOf, C, collab) {
+    const parts = [];
+    const prev = versions[versions.indexOf(v) - 1];
+    if (prev) {
+      const a = priceOf(prev);
+      const b = priceOf(v);
+      if (a !== null && b !== null) {
+        const diff = b - a;
+        parts.push(el('p', { class: 'value-change' + (diff > 0 ? ' is-up' : diff < 0 ? ' is-down' : '') }, [
+          document.createTextNode('v' + prev.v + ' ' + M.won(a) + ' → v' + v.v + ' ' + M.won(b) + ' '),
+          el('strong', { text: diff === 0 ? '(변화 없음)' : '(' + (diff > 0 ? '+' : '−') + M.won(Math.abs(diff)) + ')' })
+        ]));
+      }
+    }
+    if (C && collab && collab.ready) {
+      const done = collab.ideas.filter((i) => i.doneVersion === String(v.id));
+      if (done.length) parts.push(el('p', { class: 'hint', text: '반영한 아이디어: ' + done.map((i) => i.body).join(' / ') }));
+      const people = C.contributorsFor(collab, v.id);
+      if (people.length) {
+        parts.push(el('p', { class: 'credit-people' }, [
+          el('span', { class: 'tag tag-seeking', text: '기여 ' + people.length + '명' }),
+          document.createTextNode(' ' + people.map((x) => x.name).join(', '))
+        ]));
+      }
+    }
+    return parts.length ? el('div', { class: 'credit-line' }, parts) : null;
+  }
+
   // 평가를 새로 남긴 뒤 기록 칸을 다시 그린다.
   function refreshHistory(p) {
     const old = root.querySelector('#history');
@@ -131,7 +168,7 @@
         el('div', { class: 'tag-row' }, [
           el('span', { class: 'tag', text: p.category || '기타' }), visibilityTag(p),
           p.version > 1 ? el('span', { class: 'tag tag-version', text: 'v' + p.version }) : null
-        ]),
+        ].concat(collabTags(p))),
         el('h1', { text: p.title }),
         el('p', { class: 'summary', text: p.summary }),
         el('p', { class: 'meta' }, [document.createTextNode(meta), document.createTextNode(' · 조회 ' + views.toLocaleString('ko-KR'))]),
@@ -140,6 +177,7 @@
       shot,
       panel.childNodes.length ? panel : null,
       valueBox,
+      collabSection(p),
       versionSection(p),
       feedbackSection(p)
     );
@@ -174,7 +212,7 @@
         : (p.version > 1 ? '새 버전(v' + p.version + ')이 나와서 새로 평가를 기다리고 있어요. 지난 버전의 평가는 아래 버전별 평가 기록에서 볼 수 있어요.' : '매니저가 AI로 분석해서 평가 금액과 개선 시 예상 금액을 달아 드릴 거예요.') }));
     }
     const tools = M && M.active(p, data) ? managerTools(box, p, v) : null;
-    box.replaceChildren(el('div', { class: 'panel value-panel' }, [head].concat(body)), tools);
+    box.replaceChildren(...[el("div", { class: "panel value-panel" }, [head].concat(body)), tools].filter(Boolean));
   }
 
   // 매니저 모드가 켜져 있고 금액을 달 수 있는 사람에게만 보인다.
@@ -213,6 +251,10 @@
           await M.send('AI 평가', p, { value: r.value, improved: r.improved, memo: r.memo });
           const me = globalThis.Account.current();
           M.addLocal(data, { kind: 'AI 평가', target: String(p.valueId || p.id), by: me.owner, value: r.value, improved: r.improved, memo: r.memo });
+          // AI가 뽑은 개선 아이디어를 "같이 개선하기"에 올린다. 실패해도 평가는 이미 남았다.
+          if (globalThis.Collab && data.collab && data.collab.ready && r.ideas && r.ideas.length) {
+            try { await Collab.addAiIdeas(p.valueId || p.id, r.ideas); await reloadCollab(p); } catch (ideaErr) { /* 아이디어만 못 올림 */ }
+          }
           refreshHistory(p);
           drawValue(box, p);
           const note = box.querySelector('.manager-box [aria-live]');
@@ -273,6 +315,193 @@
       el('div', { class: 'form-actions' }, [save])
     );
     return form;
+  }
+
+
+  // ---- 같이 개선하기: 예상 가치 아래 ----
+  async function reloadCollab(p) {
+    try { data.collab = await Collab.load(true); } catch (err) { /* 그대로 둔다 */ }
+    const old = root.querySelector('#collab');
+    if (old) old.replaceWith(collabSection(p));
+    refreshHistory(p);
+  }
+
+  function collabSection(p) {
+    const C = globalThis.Collab;
+    const c = data.collab;
+    const box = el('section', { class: 'panel collab', id: 'collab', 'aria-labelledby': 'collab-title' });
+    if (!C || !c || !c.ready) return null; // 서버 준비 전에는 칸을 만들지 않는다.
+    const me = globalThis.Account && Account.current();
+    const owner = isOwner(p);
+    const manager = M && me && M.canValue(me.owner, p, data);
+    const repo = p.openSource && p.repoUrl && C.REPO_RE.test(p.repoUrl) ? p.repoUrl : '';
+    const all = C.ideasFor(c, p.id);
+    const versionOf = (vid) => { const v = (p.versions || []).find((x) => x.id === vid); return v ? v.v : null; };
+
+    const head = el('div', { class: 'value-head' }, [el('h2', { id: 'collab-title', text: '같이 개선하기' })]);
+    const tags = collabTags(p);
+    if (p.openSource && p.license && p.license !== '모름') tags.push(el('span', { class: 'tag', text: p.license }));
+    if (tags.length) head.append(el('div', { class: 'tag-row' }, tags));
+    box.append(head);
+    box.append(el('p', { class: 'hint', text: 'AI 평가에서 나온 개선 아이디어예요. 해 보고 싶은 아이디어에 "나도 해볼래요"를 누르면 만든 사람이 보고 연락해요. 새 버전에 반영되면 기여자로 이름이 남아요.' }));
+    if (repo) {
+      box.append(el('div', { class: 'actions' }, [
+        el('a', { class: 'btn btn-plain btn-sm', href: repo, target: '_blank', rel: 'noopener noreferrer', text: 'GitHub 저장소 보기' })
+      ]));
+    }
+
+    const error = el('p', { class: 'form-error', role: 'alert', hidden: '' });
+    function fail(err) { error.textContent = (err && err.message) || '처리하지 못했어요.'; error.hidden = false; }
+    async function run(button, job) {
+      error.hidden = true;
+      if (button) button.disabled = true;
+      try { await job(); await reloadCollab(p); } catch (err) { if (button) button.disabled = false; fail(err); }
+    }
+
+    // 열린 아이디어
+    const open = all.filter((i) => i.status === '열림');
+    const list = el('ul', { class: 'idea-list' });
+    open.forEach((i) => list.append(ideaItem(i)));
+    box.append(open.length ? list : el('p', { class: 'hint', text: all.length ? '지금 열린 아이디어가 없어요.' : '아직 개선 아이디어가 없어요. 매니저가 AI 평가를 하면 생기고, 아래에서 직접 제안할 수도 있어요.' }));
+
+    function ideaItem(i) {
+      const n = C.countFor(c, i.id);
+      const mine = C.myJoin(c, i.id);
+      const li = el('li', { class: 'idea-item' + (mine ? ' is-joined' : '') });
+      li.append(el('div', { class: 'idea-top' }, [
+        el('p', { class: 'idea-body', text: i.body }),
+        i.gain ? el('span', { class: 'idea-gain', text: '+' + M.won(i.gain) }) : null
+      ]));
+      li.append(el('p', { class: 'hint', text: [i.source === 'AI' ? 'AI 평가에서 나옴' : i.source === '제안' ? '모임원 제안' : '만든 사람이 적음', '해볼래요 ' + n + '명', mine ? '나도 참여 중' + (mine.note ? ': ' + mine.note : '') : ''].filter(Boolean).join(' · ') }));
+      const buttons = el('div', { class: 'actions' });
+      if (!me) {
+        buttons.append(el('span', { class: 'hint', text: '구글로 로그인하면 참여할 수 있어요.' }));
+      } else if (!owner) {
+        if (mine) {
+          const cancel = el('button', { type: 'button', class: 'btn btn-plain btn-sm', text: '참여 취소' });
+          cancel.addEventListener('click', () => run(cancel, () => C.join(i.id, false)));
+          buttons.append(cancel);
+        } else {
+          const join = el('button', { type: 'button', class: 'btn btn-outline btn-sm', text: '나도 해볼래요' });
+          join.addEventListener('click', () => {
+            join.hidden = true;
+            const noteId = 'join-note-' + i.id;
+            const note = el('input', { id: noteId, type: 'text', maxlength: '200', placeholder: '예: 프론트엔드 해 봤어요, 주말에 가능해요' });
+            const send = el('button', { type: 'button', class: 'btn btn-primary btn-sm', text: '참여하기' });
+            send.addEventListener('click', () => run(send, () => C.join(i.id, true, note.value.trim())));
+            li.append(el('div', { class: 'field join-form' }, [
+              el('label', { for: noteId, text: '만든 사람에게 한 줄 (선택, 만든 사람과 나만 봐요)' }), note,
+              el('div', { class: 'actions' }, [send])
+            ]));
+            note.focus();
+          });
+          buttons.append(join);
+        }
+      }
+      const issue = repo ? C.issueUrl(repo, p, i) : null;
+      if (issue) buttons.append(el('a', { class: 'btn btn-plain btn-sm', href: issue, target: '_blank', rel: 'noopener noreferrer', text: 'GitHub 이슈 만들기' }));
+      if (owner || manager) {
+        const close = el('button', { type: 'button', class: 'btn btn-plain btn-sm', text: '닫기' });
+        close.addEventListener('click', () => run(close, () => C.setStatus(i.id, '닫힘')));
+        buttons.append(close);
+      }
+      li.append(buttons);
+      // 주인에게만: 참여한 사람과 메모
+      const joins = owner ? C.joinsFor(c, i.id) : [];
+      if (joins.length) {
+        li.append(el('ul', { class: 'join-list' }, joins.map((j) => el('li', {}, [
+          el('strong', { text: j.name }), document.createTextNode(j.note ? ' · ' + j.note : '')
+        ]))));
+      }
+      return li;
+    }
+
+    // 주인에게만: 승인을 기다리는 제안
+    const pending = all.filter((i) => i.status === '제안');
+    if (owner && pending.length) {
+      box.append(el('h3', { text: '승인을 기다리는 제안 ' + pending.length + '개' }));
+      box.append(el('ul', { class: 'idea-list' }, pending.map((i) => {
+        const ok = el('button', { type: 'button', class: 'btn btn-primary btn-sm', text: '승인' });
+        const no = el('button', { type: 'button', class: 'btn btn-plain btn-sm', text: '거절' });
+        ok.addEventListener('click', () => run(ok, () => C.setStatus(i.id, '열림')));
+        no.addEventListener('click', () => run(no, () => C.setStatus(i.id, '닫힘')));
+        return el('li', { class: 'idea-item is-pending' }, [el('p', { class: 'idea-body', text: i.body }), el('div', { class: 'actions' }, [ok, no])]);
+      })));
+    } else if (!owner && me) {
+      const waiting = pending.filter((i) => i.by === me.owner);
+      if (waiting.length) box.append(el('p', { class: 'hint', text: '내가 낸 제안 ' + waiting.length + '개가 만든 사람의 승인을 기다리고 있어요.' }));
+    }
+
+    // 반영된 아이디어
+    const done = all.filter((i) => i.status === '반영');
+    if (done.length) {
+      box.append(el('details', { class: 'eval-older' }, [el('summary', { text: '반영된 아이디어 ' + done.length + '개' })].concat(done.map((i) =>
+        el('p', {}, [el('span', { class: 'tag tag-version', text: versionOf(i.doneVersion) ? 'v' + versionOf(i.doneVersion) + '에 반영' : '반영됨' }), document.createTextNode(' ' + i.body)])
+      ))));
+    }
+    // 주인에게만: 닫은 아이디어 다시 열기
+    const closed = all.filter((i) => i.status === '닫힘');
+    if ((owner || manager) && closed.length) {
+      box.append(el('details', { class: 'eval-older' }, [el('summary', { text: '닫은 아이디어 ' + closed.length + '개' })].concat(closed.map((i) => {
+        const reopen = el('button', { type: 'button', class: 'btn btn-plain btn-sm', text: '다시 열기' });
+        reopen.addEventListener('click', () => run(reopen, () => C.setStatus(i.id, '열림')));
+        return el('div', { class: 'idea-closed' }, [el('span', { text: i.body }), reopen]);
+      }))));
+    }
+
+    // 아이디어 적기: 주인은 바로 열리고, 다른 사람은 제안(주인 승인 후 보임)
+    if (me) {
+      const ta = el('textarea', { id: 'idea-new', maxlength: '200', rows: '2', placeholder: '예: 첫 화면에 사용 예시를 보여 주면 더 많이 써 볼 것 같아요' });
+      const add = el('button', { type: 'button', class: 'btn btn-plain btn-sm', text: owner ? '아이디어 추가' : '아이디어 제안하기' });
+      add.addEventListener('click', () => {
+        if (!ta.value.trim()) { fail(new Error('아이디어를 적어 주세요.')); ta.focus(); return; }
+        run(add, () => C.propose(p.id, ta.value.trim()));
+      });
+      box.append(el('div', { class: 'field' }, [
+        el('label', { for: 'idea-new', text: owner ? '개선 아이디어 직접 적기' : '개선 아이디어 제안하기 (만든 사람이 승인하면 보여요)' }), ta,
+        el('div', { class: 'actions' }, [add])
+      ]));
+    }
+
+    // 주인에게만: 협업 설정
+    if (owner) box.append(settingsForm(p, run));
+    box.append(error);
+    return box;
+  }
+
+  function settingsForm(p, run) {
+    const C = globalThis.Collab;
+    const openBox = el('input', { type: 'checkbox', id: 'cs-open' });
+    openBox.checked = Boolean(p.openSource);
+    const repo = el('input', { id: 'cs-repo', type: 'url', maxlength: '200', placeholder: 'https://github.com/아이디/저장소' });
+    repo.value = p.repoUrl || '';
+    const lic = el('select', { id: 'cs-license' }, C.LICENSES.map((l) => el('option', { value: l, text: l === '모름' ? '아직 모름' : l })));
+    lic.value = p.license || '모름';
+    const seek = el('input', { type: 'checkbox', id: 'cs-seeking' });
+    seek.checked = Boolean(p.seeking);
+    const save = el('button', { type: 'button', class: 'btn btn-primary btn-sm', text: '저장' });
+    const repoBox = el('div', { class: 'stack-sm' }, [
+      el('div', { class: 'field' }, [el('label', { for: 'cs-repo', text: 'GitHub 저장소 주소' }), repo]),
+      el('div', { class: 'field' }, [el('label', { for: 'cs-license', text: '라이선스' }), lic])
+    ]);
+    const sync = () => { repoBox.hidden = !openBox.checked; };
+    openBox.addEventListener('change', sync);
+    sync();
+    save.addEventListener('click', () => {
+      const url = repo.value.trim().replace(/\.git$/, '');
+      if (openBox.checked && !C.REPO_RE.test(url)) { repo.focus(); run(null, () => Promise.reject(new Error('저장소 주소는 https://github.com/아이디/저장소 모양으로 적어 주세요.'))); return; }
+      run(save, async () => {
+        await C.setCollab(p.id, openBox.checked, url, lic.value, seek.checked);
+        p.openSource = openBox.checked; p.repoUrl = openBox.checked ? url : ''; p.license = lic.value; p.seeking = seek.checked;
+        render(p);
+      });
+    });
+    const l1 = el('label', { class: 'radio' }); l1.append(openBox, document.createTextNode(' 코드를 오픈소스로 공개해요'));
+    const l2 = el('label', { class: 'radio' }); l2.append(seek, document.createTextNode(' 같이 개선할 사람을 구해요'));
+    return el('details', { class: 'collab-settings' }, [
+      el('summary', { text: '협업 설정 (만든 사람만 보여요)' }),
+      el('div', { class: 'stack-sm' }, [l1, repoBox, l2, el('div', { class: 'actions' }, [save])])
+    ]);
   }
 
   if (!id) { notFound('어떤 결과물인지 알 수 없어요.'); return; }

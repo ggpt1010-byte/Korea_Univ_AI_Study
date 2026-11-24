@@ -30,6 +30,50 @@
     }
   }
 
+  // 같이 개선하기: 내 결과물에 들어온 참여, 내가 해볼래요 누른 아이디어, 내가 기여한 결과물.
+  const collabBox = document.getElementById('me-collab');
+  const collabBody = document.getElementById('me-collab-body');
+  function showCollab(me) {
+    const c = data && data.collab;
+    if (!c || !c.ready) { collabBox.hidden = true; return; }
+    const byId = new Map(all.map((p) => [String(p.id), p]));
+    // 버전 번호로도 결과물을 찾을 수 있게 한다(기여는 버전에 남는다).
+    const versionOf = new Map();
+    all.forEach((p) => (p.versions || []).forEach((v) => versionOf.set(String(v.id), { p: p, v: v.v })));
+    const ideaById = new Map(c.ideas.map((i) => [i.id, i]));
+    const link = (p) => el('a', { href: projectLink(p), text: p.title });
+
+    const incoming = c.joins.filter((j) => {
+      const i = ideaById.get(j.idea);
+      const p = i && byId.get(i.target);
+      return p && p.owner === me.owner && j.owner !== me.owner;
+    });
+    const mine = c.joins.filter((j) => j.owner === me.owner && ideaById.has(j.idea) && byId.has(ideaById.get(j.idea).target));
+    const credits = c.contributors.filter((x) => x.owner === me.owner && versionOf.has(String(x.version)));
+
+    const block = (title, items, emptyText) => el('div', { class: 'panel collab-block' }, [
+      el('h3', { text: title + ' ' + items.length }),
+      items.length ? el('ul', { class: 'join-list' }, items) : el('p', { class: 'hint', text: emptyText })
+    ]);
+    collabBody.replaceChildren(
+      block('내 결과물에 들어온 참여', incoming.map((j) => {
+        const i = ideaById.get(j.idea);
+        return el('li', {}, [el('strong', { text: j.name }), document.createTextNode(j.note ? ' · ' + j.note : ''),
+          el('br'), el('span', { class: 'hint' }, [link(byId.get(i.target)), document.createTextNode(' · ' + i.body)])]);
+      }), '아직 없어요. 결과물 화면에서 "같이 할 사람 구해요"를 켜 보세요.'),
+      block('내가 해볼래요 누른 아이디어', mine.map((j) => {
+        const i = ideaById.get(j.idea);
+        return el('li', {}, [el('span', { text: i.body + (i.status === '반영' ? ' (반영됨)' : i.status === '닫힘' ? ' (닫힘)' : '') }),
+          el('br'), el('span', { class: 'hint' }, [link(byId.get(i.target)), document.createTextNode(j.note ? ' · 내 메모: ' + j.note : '')])]);
+      }), '아직 없어요. 결과물 화면의 개선 아이디어에서 "나도 해볼래요"를 눌러 보세요.'),
+      block('내가 기여한 결과물', credits.map((x) => {
+        const hit = versionOf.get(String(x.version));
+        return el('li', {}, [link(hit.p), document.createTextNode(' v' + hit.v + '에 기여')]);
+      }), '아직 없어요. 참여한 아이디어가 새 버전에 반영되면 여기에 남아요.')
+    );
+    collabBox.hidden = false;
+  }
+
   function render(me) {
     out.hidden = Boolean(me);
     inside.hidden = !me;
@@ -42,14 +86,14 @@
     document.getElementById('me-name').textContent = me.name + ' 님';
     document.getElementById('me-initial').textContent = Array.from(me.name)[0] || '?';
     document.getElementById('me-owner').textContent = me.owner;
-    if (all) { showList(me); showManager(me); return; }
+    if (all) { showList(me); showManager(me); showCollab(me); return; }
     count.textContent = '불러오는 중';
     loadBoard()
       .then((board) => {
         all = board.projects;
         data = board.data;
         const now = account.current();
-        if (now) { showList(now); showManager(now); }
+        if (now) { showList(now); showManager(now); showCollab(now); }
       })
       .catch((err) => {
         count.textContent = '';

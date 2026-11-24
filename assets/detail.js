@@ -73,7 +73,7 @@
         : [el('p', { class: 'hint', text: val.state === 'analyzing' ? '분석 중이에요.' : '아직 평가가 없어요.' })];
       return el('li', { class: 'version-item' }, [
         el('div', { class: 'version-top' }, [
-          el('strong', { text: many ? 'v' + v.v + (v.v === p.version ? ' (지금 버전)' : '') : '평가 기록' }),
+          el('strong', { text: 'v' + v.v + (v.v === p.version || !many ? ' (지금 버전)' : '') }),
           el('span', { class: 'hint' }, [
             document.createTextNode(formatDate(v.createdAt)),
             many && url ? document.createTextNode(' · ') : null,

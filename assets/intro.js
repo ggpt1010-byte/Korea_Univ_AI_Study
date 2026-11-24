@@ -144,6 +144,7 @@
   var steps = Array.prototype.slice.call(document.querySelectorAll('.i-step'));
   var v1 = document.getElementById('value-v1');
   var v2 = document.getElementById('value-v2');
+  var launchUsers = document.getElementById('launch-users');
   var current = 0;
   function setStep(n) {
     if (n === current) return;
@@ -156,7 +157,9 @@
     if (n === 2 && prev < 2) countUp(v1, 3200000, { prefix: '₩ ', duration: 1600 });
     if (n >= 2 && prev < 2 && n > 2) v1.textContent = '₩ 3,200,000';
     if (n === 1) v1.textContent = '₩ 0';
-    if (n === 4) countUp(v2, 8500000, { prefix: '₩ ', from: 3200000, duration: 1800 });
+    if (n === 4 && prev < 4) countUp(v2, 8500000, { prefix: '₩ ', from: 3200000, duration: 1800 });
+    if (n === 5) { if (prev < 4) v2.textContent = '₩ 8,500,000'; countUp(launchUsers, 1240, { duration: 1600 }); }
+    if (n < 5) launchUsers.textContent = '0';
   }
   if (stage && steps.length) {
     if ('IntersectionObserver' in window) {

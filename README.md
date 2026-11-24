@@ -8,6 +8,7 @@
 - `groups.html` 그룹 들어가기(방 목록 #1부터, 방 만들기), `group.html` 방 화면(제목과 설명, 비공개 결과물, 공개 결과물, 검증)
 - `assets/manager.js` 예상 가치(평가 금액, 개선 시 예상 금액)와 매니저 기능, `estimate.html`은 예전 주소를 `submit.html`로 넘기는 페이지
 - `assets/config.js` 구글 폼, 구글 시트, 구글 로그인, 피드백 설정을 모아 둔 곳
+- 모든 HTML은 `assets/` 파일을 `?v=날짜`를 붙여 불러요. GitHub Pages는 파일을 10분쯤 브라우저에 저장해 두기 때문에, 여러 파일을 함께 바꾼 뒤에는 이 값을 새 날짜로 바꿔야 옛 파일과 새 파일이 섞여 화면이 비는 일이 없어요.
 - `data/projects.json` 직접 넣어 둔 결과물 (지금은 예시)
 - `data/submissions.json` 구글 시트에서 받아 둔 등록 내용 사본 (자동으로 갱신)
 - `shots/` 체험 링크의 첫 화면 이미지 (자동으로 갱신)

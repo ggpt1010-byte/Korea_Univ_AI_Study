@@ -2,8 +2,8 @@
 globalThis.SITE_CONFIG = {
   // Supabase 프로젝트 주소와 공개 키(publishable 또는 anon). 공개 키는 사이트에 넣어도 되는 키다.
   // 절대 secret / service_role 키를 넣지 말 것. 둘 다 비어 있으면 등록, 그룹, 좋아요 기능을 닫아 둔다.
-  supabaseUrl: '',
-  supabaseKey: '',
+  supabaseUrl: 'https://ycvnnwsokjysgunwinma.supabase.co',
+  supabaseKey: 'sb_publishable_NVvzHrqlAEqNRAnzD1W2xA_b3Kajgf6',
   // 사이트 매니저의 계정 번호(내 정보 화면 아래쪽의 g로 시작하는 값). 모든 결과물에 예상 가치를 달 수 있다.
   // 서버 권한은 Supabase 의 managers 표가 정한다. 여기는 화면 표시에만 쓰므로 두 곳을 같이 고칠 것.
   // 방장은 따로 적지 않아도 된다. 방을 만든 사람이 그 방의 방장이다.

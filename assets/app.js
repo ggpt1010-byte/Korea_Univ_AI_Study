@@ -63,7 +63,8 @@ function photoList(project) {
   [project.image].concat(project.images || []).forEach((src) => {
     if (src && list.indexOf(src) === -1) list.push(src);
   });
-  list.push('shots/' + encodeURIComponent(project.shotId || project.id) + '.jpg');
+  // 비공개 결과물은 첫 화면을 찍지 않는다(찍은 이미지가 공개 저장소에 올라가기 때문).
+  if (!project.private) list.push('shots/' + encodeURIComponent(project.shotId || project.id) + '.jpg');
   return list;
 }
 
@@ -80,7 +81,7 @@ function thumbnail(project, extraClass) {
 
   function show() {
     if (!photos.length) {
-      box.replaceChildren(document.createTextNode('첫 화면 미리보기를 준비하고 있어요'));
+      box.replaceChildren(document.createTextNode(project.private ? '비공개 결과물은 미리보기 이미지를 만들지 않아요' : '첫 화면 미리보기를 준비하고 있어요'));
       return;
     }
     index = (index + photos.length) % photos.length;

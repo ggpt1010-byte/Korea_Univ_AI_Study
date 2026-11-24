@@ -41,12 +41,12 @@
     const input = el('input', { id: 'room-pass', type: 'password', autocomplete: isOwner ? 'new-password' : 'current-password', maxlength: '100' });
     const input2 = isOwner ? el('input', { id: 'room-pass2', type: 'password', autocomplete: 'new-password', maxlength: '100' }) : null;
     const send = el('button', { class: 'btn btn-primary', type: 'submit', text: isOwner ? '비밀번호 정하고 들어가기' : '들어가기' });
-    form.append(
+    form.append(...[
       el('div', { class: 'field' }, [el('label', { for: 'room-pass', text: isOwner ? '새 비밀번호 (6자 이상)' : '비밀번호' }), input]),
       input2 ? el('div', { class: 'field' }, [el('label', { for: 'room-pass2', text: '새 비밀번호 한 번 더' }), input2]) : null,
       error,
       el('div', { class: 'form-actions' }, [send])
-    );
+    ].filter(Boolean));
     function fail(text) { error.textContent = text; error.hidden = false; input.focus(); }
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -68,7 +68,7 @@
       }
     });
     const ownerNote = isOwner
-      ? el('p', { class: 'hint', text: '내가 방장인 방이에요. 사이트를 옮기면서 예전 비밀번호는 지웠어요. 새 비밀번호를 정하면 들어갈 수 있고, 멤버들에게 새 비밀번호를 알려 주세요.' })
+      ? el('p', { class: 'hint', text: '내가 방장인 방인데 아직 비밀번호가 없어요. 비밀번호를 정하면 들어갈 수 있어요. 멤버들에게 그 비밀번호를 알려 주세요.' })
       : null;
     root.replaceChildren(el('div', { class: 'page-narrow-inner stack' }, head.concat([ownerNote, form].filter(Boolean))));
     input.focus();

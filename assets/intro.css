@@ -189,7 +189,6 @@
   display: inline-flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900;
 }
 .i-step.is-active .i-step-num { background: var(--accent); }
-.i-soon { padding: 3px 10px; border-radius: 999px; background: #FFF1D6; color: #7A4B00; font-size: 13px; font-weight: 700; }
 
 /* 3. 두 가지 */
 .i-values { max-width: 1120px; margin: 0 auto; padding: 48px 24px 72px; display: flex; flex-direction: column; gap: 28px; }

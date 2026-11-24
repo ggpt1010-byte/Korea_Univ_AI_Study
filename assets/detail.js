@@ -1,6 +1,8 @@
 (function () {
   const root = document.getElementById('detail');
   const id = new URLSearchParams(location.search).get('id');
+  const M = globalThis.Manager;
+  let data = { groups: [], votes: {}, valueEvents: [], likes: {}, views: {} };
 
   function section(title, body) {
     return el('section', {}, [el('h2', { text: title }), body]);
@@ -37,19 +39,48 @@
     return box;
   }
 
+  function isOwner(p) {
+    const me = globalThis.Account && Account.current();
+    return Boolean(me && p.owner && me.owner === p.owner && /^s[0-9a-f]{8}$/.test(String(p.id)));
+  }
+
+  // 버전 기록: 최신 버전이 위. 지난 버전의 예상 가치도 함께 보여 준다.
+  function versionSection(p) {
+    const items = p.versions.slice().reverse().map((v) => {
+      const val = M ? M.valueOf(Object.assign({}, p, { valueId: v.id }), data) : { state: 'requested' };
+      const url = safeUrl(v.url);
+      return el('li', { class: 'version-item' }, [
+        el('div', { class: 'version-top' }, [
+          el('strong', { text: 'v' + v.v + (v.v === p.version ? ' (지금 버전)' : '') }),
+          el('span', { class: 'hint', text: formatDate(v.createdAt) })
+        ]),
+        v.changes ? el('p', { text: v.changes }) : (v.v === 1 ? el('p', { text: '처음 올린 버전이에요.' }) : null),
+        el('p', { class: 'hint' }, [
+          document.createTextNode(val.state === 'done' ? 'v' + v.v + ' 평가: ' + M.won(val.value) + ' · 개선 시 ' + M.won(val.improved) : 'v' + v.v + ' 평가: ' + (val.state === 'analyzing' ? '분석 중' : '아직 없음')),
+          url ? document.createTextNode(' · ') : null,
+          url ? el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: '이 버전 체험 링크' }) : null
+        ].filter(Boolean))
+      ]);
+    });
+    return section('버전 기록', el('ol', { class: 'version-list' }, items));
+  }
+
+  let views = 0;
   function render(p) {
+    const G = globalThis.Groups;
+    views = G && G.viewsFor ? G.viewsFor(data, String(p.id)) : 0;
+    if (G && G.enabled && G.view(String(p.id))) views += 1; // 오늘 처음 연 것이면 바로 1을 더해 보여 준다.
     document.title = p.title + ' · AI개발모임';
     const url = safeUrl(p.url);
-    const meta = ['만든 사람 ' + p.author, formatDate(p.createdAt)].filter(Boolean).join(' · ');
+    const meta = ['만든 사람 ' + p.author, formatDate(p.createdAt), p.version > 1 && p.updatedAt ? 'v' + p.version + ' ' + formatDate(p.updatedAt) : ''].filter(Boolean).join(' · ');
 
     const actions = el('div', { class: 'actions' }, [
       url
         ? el('a', { class: 'btn btn-primary btn-lg', href: url, target: '_blank', rel: 'noopener noreferrer', text: '체험하러 가기' })
         : el('span', { class: 'meta', text: '체험 링크가 올바르지 않아요.' }),
       el('a', { class: 'btn btn-plain btn-lg', href: '#feedback', text: '피드백 남기기' }),
-      p.category === '게임'
-        ? el('a', { class: 'btn btn-plain btn-lg', href: 'estimate.html?id=' + encodeURIComponent(p.id), text: '수익 평가해 보기' })
-        : null
+      likeButton(p, data, 'btn btn-plain btn-lg', true),
+      isOwner(p) && ((globalThis.SITE_CONFIG || {}).formFields || {}).parent ? el('a', { class: 'btn btn-plain btn-lg', href: 'submit.html?parent=' + encodeURIComponent(p.id), text: '새 버전 올리기' }) : null
     ]);
 
     const panel = el('div', { class: 'panel' });
@@ -61,22 +92,137 @@
       panel.append(section('만드는 데 쓴 것', el('div', { class: 'tools' }, p.tools.map((t) => el('span', { text: t })))));
     }
 
+    if (Array.isArray(p.versions) && p.versions.length > 1) panel.append(versionSection(p));
     const shot = thumbnail(p, 'thumb-lg');
-    const shotLink = url ? el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', 'aria-label': p.title + ' 체험하러 가기' }, [shot]) : shot;
+    const valueBox = el('section', { class: 'value-section', id: 'value', 'aria-labelledby': 'value-title' });
+    drawValue(valueBox, p);
 
     root.replaceChildren(
       el('a', { class: 'back', href: 'index.html', text: '‹ 목록으로 돌아가기' }),
       el('section', { class: 'detail-head' }, [
-        el('span', { class: 'tag', text: p.category || '기타' }),
+        el('div', { class: 'tag-row' }, [
+          el('span', { class: 'tag', text: p.category || '기타' }), visibilityTag(p),
+          p.version > 1 ? el('span', { class: 'tag tag-version', text: 'v' + p.version }) : null
+        ]),
         el('h1', { text: p.title }),
         el('p', { class: 'summary', text: p.summary }),
-        el('p', { class: 'meta', text: meta }),
+        el('p', { class: 'meta' }, [document.createTextNode(meta), document.createTextNode(' · 조회 ' + views.toLocaleString('ko-KR'))]),
         actions
       ]),
-      shotLink,
+      shot,
       panel.childNodes.length ? panel : null,
+      valueBox,
       feedbackSection(p)
     );
+  }
+
+  // ---- 예상 가치: 어떤 프로젝트인가와 피드백 사이 ----
+  function drawValue(box, p) {
+    const v = M ? M.valueOf(p, data) : { state: 'requested' };
+    const head = el('div', { class: 'value-head' }, [el('h2', { id: 'value-title', text: '예상 가치' })]);
+    const body = [];
+    if (v.state === 'done') {
+      body.push(el('div', { class: 'stat-grid' }, [
+        el('div', { class: 'stat' }, [el('span', { class: 'stat-label', text: '평가 금액' }), el('span', { class: 'stat-value', text: M.won(v.value) })]),
+        el('div', { class: 'stat' }, [el('span', { class: 'stat-label', text: '개선 시 예상 금액' }), el('span', { class: 'stat-value', text: M.won(v.improved) })])
+      ]));
+      if (v.memo) body.push(el('p', { class: 'value-memo', text: v.memo }));
+      const who = M.isSiteManager(v.by) ? '사이트 매니저' : '방장';
+      const when = v.at ? new Date(v.at).toLocaleDateString('ko-KR') + '에 ' : '';
+      body.push(el('p', { class: 'hint', text: who + '가 ' + when + '달았어요.' + (v.reanalyzing ? ' 지금 다시 분석하고 있어요.' : '') + ' AI 추정이 섞인 값이라 실제와 크게 다를 수 있어요.' }));
+    } else {
+      head.append(el('span', { class: 'value-state' + (v.state === 'analyzing' ? ' is-busy' : ''), text: v.state === 'analyzing' ? '분석 중' : '요청 중' }));
+      body.push(el('p', { class: 'hint', text: v.state === 'analyzing'
+        ? '매니저가 AI로 분석하고 있어요. 끝나면 평가 금액과 개선 시 예상 금액이 여기에 나와요.'
+        : (p.version > 1 ? '새 버전(v' + p.version + ')이 나와서 새로 평가를 기다리고 있어요. 지난 버전의 평가는 위 버전 기록에서 볼 수 있어요.' : '매니저가 AI로 분석해서 평가 금액과 개선 시 예상 금액을 달아 드릴 거예요.') }));
+    }
+    const tools = M && M.active(p, data) ? managerTools(box, p, v) : null;
+    box.replaceChildren(el('div', { class: 'panel value-panel' }, [head].concat(body)), tools);
+  }
+
+  // 매니저 모드가 켜져 있고 금액을 달 수 있는 사람에게만 보인다.
+  function managerTools(box, p, v) {
+    const form = el('form', { class: 'form manager-box', novalidate: '' });
+    const keyId = 'mt-key';
+    const keyInput = el('input', { id: keyId, type: 'password', autocomplete: 'off', spellcheck: 'false', placeholder: 'sk-ant-로 시작하는 키' });
+    keyInput.value = M.storedKey();
+    const valueIn = el('input', { id: 'mt-value', type: 'number', min: '0', step: '10000', inputmode: 'numeric' });
+    const improvedIn = el('input', { id: 'mt-improved', type: 'number', min: '0', step: '10000', inputmode: 'numeric' });
+    const memoIn = el('textarea', { id: 'mt-memo', maxlength: '1800', placeholder: '금액을 이렇게 잡은 이유와 개선하면 좋은 점' });
+    if (v.state === 'done') { valueIn.value = v.value; improvedIn.value = v.improved; memoIn.value = v.memo || ''; }
+    const status = el('p', { class: 'hint', 'aria-live': 'polite' });
+    const error = el('p', { class: 'form-error', role: 'alert', hidden: '' });
+    const ai = el('button', { class: 'btn btn-primary', type: 'button', text: 'AI 분석 수락하기' });
+    const save = el('button', { class: 'btn btn-plain', type: 'submit', text: '이 금액으로 달기' });
+
+    function fail(message, input) { error.textContent = message; error.hidden = false; if (input) input.focus(); }
+
+    ai.addEventListener('click', async () => {
+      error.hidden = true;
+      const key = keyInput.value.trim();
+      if (!key) return fail('Anthropic API 키를 넣어 주세요. 내 정보 화면에서 기억해 둘 수도 있어요.', keyInput);
+      ai.disabled = true;
+      save.disabled = true;
+      ai.textContent = '분석하는 중 (1분쯤 걸려요)';
+      status.textContent = '다른 사람에게는 "분석 중"으로 보여요.';
+      M.send('분석 시작', p).catch(() => {});
+      try {
+        const r = await M.analyze(key, p);
+        valueIn.value = r.value;
+        improvedIn.value = r.improved;
+        memoIn.value = r.memo;
+        status.textContent = 'AI가 채운 내용을 확인하고, 필요하면 고친 뒤 "이 금액으로 달기"를 눌러 주세요.';
+        valueIn.focus();
+      } catch (err) {
+        M.send('분석 취소', p).catch(() => {});
+        status.textContent = '';
+        fail(err.message);
+      } finally {
+        ai.disabled = false;
+        save.disabled = false;
+        ai.textContent = 'AI 분석 수락하기';
+      }
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      error.hidden = true;
+      const value = Number(valueIn.value);
+      const improved = Number(improvedIn.value);
+      if (valueIn.value.trim() === '' || !Number.isFinite(value) || value < 0) return fail('평가 금액을 0 이상의 숫자로 적어 주세요.', valueIn);
+      if (improvedIn.value.trim() === '' || !Number.isFinite(improved) || improved < 0) return fail('개선 시 예상 금액을 0 이상의 숫자로 적어 주세요.', improvedIn);
+      save.disabled = true;
+      save.textContent = '보내는 중';
+      const ev = { value: String(Math.round(value)), improved: String(Math.round(improved)), memo: memoIn.value.trim().slice(0, 1800) };
+      try {
+        await M.send('가치 평가', p, ev);
+        const me = globalThis.Account.current();
+        M.addLocal(data, { kind: '가치 평가', target: String(p.valueId || p.id), by: me.owner, value: Math.round(value), improved: Math.round(improved), memo: ev.memo });
+        drawValue(box, p);
+        const note = box.querySelector('.value-panel .hint');
+        if (note) note.textContent = '금액을 달았어요. 다른 사람에게는 몇 분 뒤에 보여요.';
+      } catch (err) {
+        save.disabled = false;
+        save.textContent = '이 금액으로 달기';
+        fail('보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.');
+      }
+    });
+
+    form.append(
+      el('h2', { class: 'section-title', text: '매니저 도구' }),
+      el('p', { class: 'hint', text: '매니저 모드가 켜져 있어서 보여요. AI 분석은 내 API 키로 해요. 끄려면 내 정보 화면에서 매니저 모드를 꺼 주세요.' }),
+      el('div', { class: 'field' }, [el('label', { for: keyId, text: '내 Anthropic API 키' }), keyInput]),
+      el('div', { class: 'form-actions form-actions-start' }, [ai]),
+      status,
+      el('div', { class: 'field-row' }, [
+        el('div', { class: 'field' }, [el('label', { for: 'mt-value', text: '평가 금액 (원)' }), valueIn]),
+        el('div', { class: 'field' }, [el('label', { for: 'mt-improved', text: '개선 시 예상 금액 (원)' }), improvedIn])
+      ]),
+      el('div', { class: 'field' }, [el('label', { for: 'mt-memo', text: '메모' }), memoIn]),
+      error,
+      el('div', { class: 'form-actions' }, [save])
+    );
+    return form;
   }
 
   if (!id) { notFound('어떤 결과물인지 알 수 없어요.'); return; }
@@ -91,17 +237,17 @@
   }
 
   function canSee(p) {
-    if (!p.private) return Promise.resolve(true);
+    if (!p.private) return true;
     const G = globalThis.Groups;
-    if (!G) return Promise.resolve(false);
-    return G.load().catch(() => null).then((data) => G.isMember(p.group, data));
+    return Boolean(G && G.isMember(p.group, data));
   }
 
-  loadProjects()
-    .then((list) => {
-      const p = list.find((item) => String(item.id) === id);
+  loadBoard()
+    .then((board) => {
+      data = board.data;
+      const p = board.projects.find((item) => String(item.id) === id);
       if (!p) { notFound('찾는 결과물이 없어요. 삭제되었거나 주소가 잘못되었을 수 있어요.'); return; }
-      return canSee(p).then((ok) => { if (ok) render(p); else locked(p); });
+      if (canSee(p)) render(p); else locked(p);
     })
     .catch((err) => notFound(err.message));
 })();

@@ -95,16 +95,18 @@
 .i-journey { max-width: 1120px; margin: 0 auto; padding: 96px 24px 64px; }
 .i-journey-head { display: flex; flex-direction: column; gap: 12px; margin-bottom: 40px; }
 .i-journey-body { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
-.i-stage-wrap { position: sticky; top: 96px; perspective: 1200px; }
-.i-stage { position: relative; height: 470px; transform-style: preserve-3d; }
+.i-stage-wrap { position: sticky; top: 96px; }
+/* 카드끼리 3D 공간을 나누지 않게(flat) 하고, 카드마다 perspective() 로 기울인다.
+   preserve-3d 로 두면 일부 안드로이드 크롬에서 두 카드가 서로 파고들어 잘려 보였다. */
+.i-stage { position: relative; height: 470px; transform-style: flat; }
 .i-stage-note { position: absolute; bottom: -30px; left: 0; margin: 0; font-size: 14px; color: var(--muted); }
 
 .i-card {
   position: absolute; left: 0; right: 0; top: 0; border-radius: 20px; background: var(--surface);
   border: 1px solid var(--line); box-shadow: 0 24px 50px rgba(21,24,33,.12);
-  transition: transform .9s cubic-bezier(.2,.7,.2,1), opacity .7s ease, box-shadow .7s ease, border-color .7s ease;
+  transition: transform .9s cubic-bezier(.2,.7,.2,1), opacity .7s ease, visibility .7s, box-shadow .7s ease, border-color .7s ease;
 }
-.i-card-v1 { transform: rotateY(-8deg) rotateX(4deg); }
+.i-card-v1 { transform: perspective(1200px) rotateY(-8deg) rotateX(4deg); }
 .i-card-shot {
   height: 150px; border-radius: 20px 20px 0 0; border-bottom: 1px solid var(--line);
   background: linear-gradient(135deg, #DDE3FB, #F1F4FE); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
@@ -153,26 +155,27 @@
 .i-value { transform: translateY(10px); }
 .i-card-v1 .i-repo { max-height: 0; padding-top: 0; padding-bottom: 0; border-width: 0; overflow: hidden; transition: opacity .6s ease, max-height .6s ease, padding .6s ease; }
 .i-stage[data-step="3"] .i-card-v1 .i-repo, .i-stage[data-step="4"] .i-card-v1 .i-repo { max-height: 60px; padding-top: 8px; padding-bottom: 8px; border-width: 1px; }
-.i-card-v2 { opacity: 0; transform: translate3d(40px, 120px, 80px) rotateY(-20deg); pointer-events: none; }
+.i-card-v2 { opacity: 0; visibility: hidden; transform: perspective(1200px) translate3d(40px, 120px, 80px) rotateY(-20deg); pointer-events: none; }
 
 .i-stage[data-step="1"] .i-upload-bar i { animation: i-fill 1.4s ease forwards; }
 @keyframes i-fill { to { width: 100%; } }
-.i-stage:not([data-step="1"]) .i-upload-bar, .i-stage:not([data-step="1"]) .i-upload-text { display: none; }
-.i-stage:not([data-step="1"]) .i-card-shot::after, .i-stage[data-step="1"].done .i-card-shot::after { opacity: 1; transition-delay: 0s; }
+.i-stage:not([data-step="1"]) .i-upload-bar, .i-stage:not([data-step="1"]) .i-upload-text,
+.i-stage.is-uploaded .i-upload-bar, .i-stage.is-uploaded .i-upload-text { display: none; }
+.i-stage:not([data-step="1"]) .i-card-shot::after, .i-stage[data-step="1"].is-uploaded .i-card-shot::after { opacity: 1; transition-delay: 0s; }
 .i-stage:not([data-step="1"]) .i-card-v1 .i-chip-ver { opacity: 1; }
 
 .i-stage[data-step="2"] .i-value, .i-stage[data-step="3"] .i-value, .i-stage[data-step="4"] .i-value { opacity: 1; transform: none; }
 .i-stage[data-step="2"] .i-bubble { opacity: 1; transform: none; }
 .i-stage[data-step="2"] .i-bubble.b2 { transition-delay: .25s; }
 .i-stage[data-step="2"] .i-bubble.b3 { transition-delay: .5s; }
-.i-stage[data-step="2"] .i-card-v1 { transform: rotateY(6deg) rotateX(2deg); }
+.i-stage[data-step="2"] .i-card-v1 { transform: perspective(1200px) rotateY(6deg) rotateX(2deg); }
 
 .i-stage[data-step="3"] .i-repo, .i-stage[data-step="4"] .i-repo,
 .i-stage[data-step="3"] .i-chip-os, .i-stage[data-step="4"] .i-chip-os { opacity: 1; }
-.i-stage[data-step="3"] .i-card-v1 { transform: rotateY(-4deg) translateZ(30px); border-color: #3FD6B0; box-shadow: 0 0 0 4px rgba(63,214,176,.25), 0 30px 60px rgba(21,24,33,.16); }
+.i-stage[data-step="3"] .i-card-v1 { transform: perspective(1200px) rotateY(-4deg) translateZ(30px); border-color: #3FD6B0; box-shadow: 0 0 0 4px rgba(63,214,176,.25), 0 30px 60px rgba(21,24,33,.16); }
 
-.i-stage[data-step="4"] .i-card-v1 { transform: translate3d(-30px, -24px, -140px) rotateY(14deg); opacity: .55; }
-.i-stage[data-step="4"] .i-card-v2 { opacity: 1; transform: translate3d(24px, 120px, 60px) rotateY(-6deg); }
+.i-stage[data-step="4"] .i-card-v1 { transform: perspective(1200px) translate3d(-30px, -24px, -140px) rotateY(14deg); opacity: .55; }
+.i-stage[data-step="4"] .i-card-v2 { opacity: 1; visibility: visible; transform: perspective(1200px) translate3d(24px, 120px, 60px) rotateY(-6deg); }
 .i-stage[data-step="4"] .i-card-chart path { animation: i-draw 1.8s .4s ease forwards; }
 .i-stage:not([data-step="4"]) .i-card-chart path { animation: none; }
 
@@ -245,8 +248,8 @@
   .i-bubble { font-size: 13px; padding: 7px 11px; }
   .i-bubble.b1 { right: -6px; top: 40px; }
   .i-bubble.b2 { left: -6px; top: 70px; }
-  .i-stage[data-step="4"] .i-card-v2 { transform: translate3d(0, 70px, 60px) rotateY(-4deg) scale(.95); }
-  .i-stage[data-step="4"] .i-card-v1 { transform: translate3d(-10px, -10px, -140px) rotateY(10deg); }
+  .i-stage[data-step="4"] .i-card-v2 { transform: perspective(1200px) translate3d(0, 70px, 60px) rotateY(-4deg) scale(.95); }
+  .i-stage[data-step="4"] .i-card-v1 { transform: perspective(1200px) translate3d(-10px, -10px, -140px) rotateY(10deg); }
   .i-stage-note { bottom: -26px; }
   .i-step { min-height: 70vh; padding-left: 20px; justify-content: flex-start; padding-top: 32px; }
   .i-step p { font-size: 16px; }

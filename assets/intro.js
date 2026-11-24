@@ -150,8 +150,8 @@
     var prev = current;
     current = n;
     stage.setAttribute('data-step', String(n));
-    stage.classList.remove('done');
-    if (n === 1) setTimeout(function () { if (current === 1) stage.classList.add('done'); }, 1400);
+    stage.classList.remove('is-uploaded');
+    if (n === 1) setTimeout(function () { if (current === 1) stage.classList.add('is-uploaded'); }, 1400);
     steps.forEach(function (s) { s.classList.toggle('is-active', Number(s.getAttribute('data-step')) === n); });
     if (n === 2 && prev < 2) countUp(v1, 3200000, { prefix: '₩ ', duration: 1600 });
     if (n >= 2 && prev < 2 && n > 2) v1.textContent = '₩ 3,200,000';
